@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study Arcade: Evidence Edition</title>
+<meta name="description" content="Arcade-style study games for the Federal Rules of Evidence, powered by OpenRouter.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+<style>
+:root{
+  --bg:#0a0718; --panel:#16113a; --panel2:#201956; --line:#3b3185;
+  --text:#eeeaff; --muted:#a8a1da; --cyan:#2de2ff; --pink:#ff3fa4; --yellow:#ffe14d;
+  --green:#3dff8f; --red:#ff4f6d; --orange:#ff9a3c;
+  --pixel:"Press Start 2P", ui-monospace, monospace;
+  --sans:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.5}
+body{min-height:100vh;display:flex;flex-direction:column;
+  background:radial-gradient(1100px 600px at 50% -220px,#2c1666 0%,transparent 70%),var(--bg)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:200;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 3px)}
+a{color:var(--cyan)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.45}
+:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+
+/* ---------- header / footer ---------- */
+header.top{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 16px;background:rgba(10,7,24,.92);backdrop-filter:blur(6px);border-bottom:2px solid var(--line)}
+.logo{background:none;border:0;padding:0;font-family:var(--pixel);font-size:14px;color:var(--cyan);
+  text-shadow:0 0 8px rgba(45,226,255,.7);letter-spacing:1px;text-align:left}
+.logo span{color:var(--pink);text-shadow:0 0 8px rgba(255,63,164,.7);margin-left:6px}
+.hud-top{display:flex;align-items:center;gap:10px}
+.coins{font-family:var(--pixel);font-size:11px;color:var(--yellow);text-shadow:0 0 6px rgba(255,225,77,.6);white-space:nowrap}
+.icon-btn{background:var(--panel);border:2px solid var(--line);border-radius:8px;width:40px;height:40px;font-size:18px;line-height:1}
+main{flex:1;width:100%;max-width:880px;margin:0 auto;padding:20px 16px 40px}
+footer{padding:16px;text-align:center;color:var(--muted);font-size:13px;border-top:2px solid var(--line)}
+
+/* ---------- generic ---------- */
+.card{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:18px;margin:0 0 16px}
+.h1{font-family:var(--pixel);font-size:clamp(18px,4.6vw,30px);line-height:1.35;margin:8px 0 12px;color:var(--yellow);
+  text-shadow:3px 3px 0 #a02a6b,0 0 18px rgba(255,225,77,.35)}
+.h2{font-family:var(--pixel);font-size:13px;line-height:1.6;margin:0 0 12px;color:var(--cyan)}
+.step{display:inline-block;font-family:var(--pixel);font-size:10px;color:var(--bg);background:var(--cyan);padding:4px 7px;border-radius:4px;margin-right:8px;vertical-align:2px}
+.muted{color:var(--muted)} .small{font-size:13px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spacer{flex:1}
+.btn{border:2px solid var(--cyan);background:transparent;color:var(--cyan);border-radius:10px;padding:11px 16px;font-weight:600;
+  min-height:46px;transition:transform .08s, box-shadow .15s, background .15s}
+.btn:hover:not(:disabled){box-shadow:0 0 14px rgba(45,226,255,.45);background:rgba(45,226,255,.08)}
+.btn:active:not(:disabled){transform:translateY(2px)}
+.btn.pink{border-color:var(--pink);color:var(--pink)} .btn.pink:hover:not(:disabled){box-shadow:0 0 14px rgba(255,63,164,.5);background:rgba(255,63,164,.08)}
+.btn.yellow{border-color:var(--yellow);color:var(--yellow)}
+.btn.ghost{border-color:var(--line);color:var(--muted)}
+.btn.solid{background:var(--pink);border-color:var(--pink);color:#fff;font-family:var(--pixel);font-size:12px;letter-spacing:1px}
+.btn.solid:hover:not(:disabled){background:#ff5cb3}
+.btn.small{min-height:36px;padding:6px 12px;font-size:14px}
+.pixel{font-family:var(--pixel)}
+.coin-btn{display:block;width:100%;margin:22px 0 6px;padding:22px;font-family:var(--pixel);font-size:clamp(14px,4vw,20px);
+  color:var(--bg);background:var(--yellow);border:0;border-radius:14px;box-shadow:0 6px 0 #b38d00,0 0 30px rgba(255,225,77,.35);
+  animation:blink 1.4s steps(2,start) infinite}
+.coin-btn:hover{filter:brightness(1.08)} .coin-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #b38d00}
+@keyframes blink{50%{opacity:.82}}
+input[type=text],input[type=password],select,textarea{width:100%;background:#0d0a24;border:2px solid var(--line);border-radius:10px;color:var(--text);
+  padding:11px 12px;font:inherit;font-size:15px}
+textarea{resize:vertical;min-height:180px;line-height:1.45}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(45,226,255,.2)}
+label.lbl{display:block;font-weight:600;margin:10px 0 6px}
+details.adv summary{cursor:pointer;font-weight:600;color:var(--muted);padding:4px 0}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tab{flex:1;background:#0d0a24;border:2px solid var(--line);border-radius:10px;padding:9px;font-weight:600;color:var(--muted)}
+.tab.on{border-color:var(--cyan);color:var(--cyan);background:rgba(45,226,255,.08)}
+.drop{display:block;border:2px dashed var(--line);border-radius:12px;padding:28px 16px;text-align:center;cursor:pointer;color:var(--muted)}
+.drop.over{border-color:var(--cyan);color:var(--cyan)}
+.drop input{display:none}
+.status{font-size:14px;margin-top:8px;min-height:1.2em}
+.status.ok{color:var(--green)} .status.err{color:var(--red)}
+.notice{border:2px solid var(--orange);color:#ffd2a6;background:rgba(255,154,60,.08);border-radius:12px;padding:12px 14px;margin:0 0 16px;font-size:14px}
+
+/* ---------- hub ---------- */
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:16px}
+.tile{position:relative;text-align:left;background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px;min-height:160px;
+  display:flex;flex-direction:column;gap:8px;transition:transform .1s, border-color .15s, box-shadow .15s}
+.tile:hover{transform:translateY(-3px);border-color:var(--pink);box-shadow:0 0 22px rgba(255,63,164,.3)}
+.tile .ico{font-size:28px;line-height:1}
+.tile .tname{font-family:var(--pixel);font-size:12px;color:var(--yellow);line-height:1.5}
+.tile .tdesc{font-size:14px;color:var(--muted);flex:1}
+.tile .thi{font-family:var(--pixel);font-size:9px;color:var(--cyan);line-height:1.8}
+.weak-btn{width:100%;text-align:left;display:flex;gap:14px;align-items:center;background:linear-gradient(90deg,rgba(255,63,164,.16),rgba(45,226,255,.08));
+  border:2px solid var(--pink);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+.weak-btn .ico{font-size:26px}
+.mbar{display:grid;grid-template-columns:minmax(120px,210px) 1fr 52px;gap:10px;align-items:center;margin:8px 0;font-size:14px}
+.mbar .track{height:14px;background:#0d0a24;border:2px solid var(--line);border-radius:4px;overflow:hidden}
+.mbar .fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .6s}
+.mbar.weak .fill{background:linear-gradient(90deg,var(--red),var(--orange))}
+.mbar .pct{font-family:var(--pixel);font-size:10px;text-align:right}
+.tag{display:inline-block;font-family:var(--pixel);font-size:8px;padding:3px 5px;border-radius:3px;background:var(--red);color:#fff;margin-left:6px;vertical-align:2px}
+
+/* ---------- loading ---------- */
+.loading{text-align:center;padding:30px 0}
+.loadbar{height:22px;border:3px solid var(--cyan);border-radius:4px;padding:3px;margin:26px auto;max-width:420px}
+.loadbar div{height:100%;width:30%;background:repeating-linear-gradient(90deg,var(--cyan) 0 14px,transparent 14px 18px);animation:load 1.6s linear infinite}
+@keyframes load{0%{margin-left:-30%}100%{margin-left:100%}}
+.loadbar{overflow:hidden}
+.tip{max-width:560px;margin:18px auto;text-align:left}
+
+/* ---------- game ---------- */
+.ghud{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-family:var(--pixel);font-size:10px;margin-bottom:14px;
+  background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:10px 12px}
+.ghud .gt{color:var(--yellow)}
+.ghud .sc{color:var(--cyan)}
+.ghud .streak{color:var(--orange)}
+.ghud .lives{color:var(--red);font-size:13px;letter-spacing:2px}
+.timer{height:10px;background:#0d0a24;border:2px solid var(--line);border-radius:4px;overflow:hidden;margin:0 0 14px}
+.timer div{height:100%;background:var(--green);transition:width .1s linear}
+.timer.warn div{background:var(--orange)} .timer.danger div{background:var(--red)}
+.qtext{font-size:clamp(17px,2.6vw,20px);font-weight:600;line-height:1.45;margin:0 0 16px}
+.topic-chip{display:inline-block;font-size:12px;color:var(--cyan);border:1px solid var(--cyan);border-radius:20px;padding:2px 10px;margin-bottom:10px}
+.choices{display:grid;gap:10px}
+.choice{display:flex;gap:12px;align-items:flex-start;text-align:left;background:#0d0a24;border:2px solid var(--line);border-radius:12px;padding:13px 14px;min-height:52px}
+.choice .k{font-family:var(--pixel);font-size:11px;color:var(--pink);padding-top:4px;min-width:16px}
+.choice:hover:not(:disabled){border-color:var(--cyan)}
+.choice.right{border-color:var(--green);background:rgba(61,255,143,.12);opacity:1}
+.choice.wrong{border-color:var(--red);background:rgba(255,79,109,.12);opacity:1}
+.fb{margin-top:16px;border:2px solid var(--line);border-radius:12px;padding:14px;background:var(--panel2)}
+.fb.good{border-color:var(--green)} .fb.bad{border-color:var(--red)}
+.fb .verdict{font-family:var(--pixel);font-size:13px;margin-bottom:8px;line-height:1.6}
+.fb.good .verdict{color:var(--green)} .fb.bad .verdict{color:var(--red)}
+.src{margin-top:12px;border-left:4px solid var(--line);padding:4px 0 4px 12px}
+.src.verified{border-left-color:var(--green)} .src.unverified{border-left-color:var(--orange)}
+.src-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--muted)}
+.src blockquote{margin:6px 0 0;font-size:14px;font-style:italic;color:#d8d3ff}
+.badge{font-family:var(--pixel);font-size:8px;padding:4px 6px;border-radius:3px}
+.badge.ok{background:var(--green);color:#062}
+.badge.warn{background:var(--orange);color:#3a1b00}
+.pts{font-family:var(--pixel);font-size:11px;color:var(--yellow);margin-left:8px}
+.next-row{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+
+/* element check */
+.facts{background:#0d0a24;border:2px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;font-size:16px}
+.rule-name{font-family:var(--pixel);font-size:12px;color:var(--yellow);line-height:1.6;margin-bottom:10px}
+.els{display:grid;gap:8px;margin-bottom:14px}
+.elx{display:flex;gap:12px;align-items:flex-start;text-align:left;background:#0d0a24;border:2px solid var(--line);border-radius:10px;padding:12px}
+.elx .box{flex:0 0 22px;height:22px;border:2px solid var(--cyan);border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--bg)}
+.elx.on .box{background:var(--cyan)}
+.elx.on{border-color:var(--cyan)}
+.elx.right{border-color:var(--green)} .elx.wrong{border-color:var(--red)}
+.elx .why{display:block;font-size:13px;color:var(--muted);margin-top:4px}
+.outcomes{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+.oc{background:#0d0a24;border:2px solid var(--line);border-radius:10px;padding:12px;font-weight:700}
+.oc.on{border-color:var(--pink);color:var(--pink);background:rgba(255,63,164,.08)}
+
+/* objection */
+.setup{font-size:15px;color:var(--muted);margin-bottom:12px}
+.transcript{background:#f7f3e3;color:#1b1630;border-radius:10px;padding:14px 16px;font-family:"Courier New",Courier,monospace;font-size:15px;
+  box-shadow:inset 0 0 0 2px #d8cfa8;margin-bottom:14px}
+.tl{display:grid;grid-template-columns:28px 1fr 26px;gap:6px;padding:6px 4px;border-radius:6px;line-height:1.45}
+.tl .sp{font-weight:700}
+.tl.cur{background:#ffe58a;animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{background:#fff0b8}}
+.tl .mk{font-weight:700;text-align:center}
+.tl.ok .mk{color:#0a8a3a} .tl.no .mk{color:#c3123a}
+.ctrl{position:sticky;bottom:0;background:rgba(10,7,24,.96);border:2px solid var(--line);border-radius:14px;padding:12px;z-index:5;
+  max-height:70vh;overflow:auto}
+.ctrl .big{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.obj-btn{font-family:var(--pixel);font-size:clamp(11px,2.8vw,14px);padding:18px 8px;border-radius:12px;border:0;line-height:1.4}
+.obj-btn.in{background:var(--cyan);color:var(--bg)}
+.obj-btn.obj{background:var(--red);color:#fff;box-shadow:0 0 18px rgba(255,79,109,.45)}
+.grounds{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:4px}
+.ground{background:#0d0a24;border:2px solid var(--red);color:#ffd0d9;border-radius:10px;padding:11px;font-weight:600;text-align:left}
+.ground .k{font-family:var(--pixel);font-size:10px;color:var(--yellow);margin-right:8px}
+.ground:hover{background:rgba(255,79,109,.15)}
+
+/* match */
+.mgrid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:10px}
+.mcol{display:grid;gap:10px;align-content:start}
+.mi{text-align:left;background:#0d0a24;border:2px solid var(--line);border-radius:10px;padding:12px;min-height:56px;font-size:15px;transition:border-color .1s, background .1s}
+.mi.l{font-weight:700}
+.mi:hover:not(.done){border-color:var(--cyan)}
+.mi.sel{border-color:var(--yellow);background:rgba(255,225,77,.1);box-shadow:0 0 12px rgba(255,225,77,.35)}
+.mi.done{border-color:var(--green);background:rgba(61,255,143,.12);color:#c9ffe0;cursor:default}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+.flash-bad{border-color:var(--red)!important;background:rgba(255,79,109,.15)!important}
+
+/* results */
+.big-score{font-family:var(--pixel);font-size:clamp(28px,8vw,48px);color:var(--yellow);text-align:center;margin:10px 0;text-shadow:0 0 18px rgba(255,225,77,.5)}
+.newhigh{font-family:var(--pixel);text-align:center;color:var(--pink);font-size:clamp(13px,3.6vw,18px);animation:blink .6s steps(2,start) infinite;margin:6px 0 14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
+.stat{background:#0d0a24;border:2px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.stat .v{font-family:var(--pixel);font-size:16px;color:var(--cyan);margin-top:6px}
+.stat .l{font-size:13px;color:var(--muted)}
+.miss{border-top:2px solid var(--line);padding:12px 0}
+.miss:first-child{border-top:0}
+.miss .mq{font-weight:600;margin:4px 0 6px}
+.miss .ma{font-size:14px}
+.miss .ma b{color:var(--green)} .miss .ma i{color:#ff9fb1;font-style:normal}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(5,3,15,.8);z-index:150;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{max-width:440px;width:100%}
+.confetti{position:fixed;top:-12px;width:9px;height:9px;z-index:160;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg)}}
+
+@media (max-width:620px){
+  .tiles{grid-template-columns:1fr}
+  .tile{min-height:0}
+  .mbar{grid-template-columns:1fr 52px}
+  .mbar .track{grid-column:1 / -1;grid-row:2}
+  .grounds{grid-template-columns:1fr}
+  .mgrid{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:8px}
+  .mi{padding:10px;font-size:14px}
+  .logo{font-size:11px}
+  .coins{font-size:9px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <button class="logo" id="logoBtn" aria-label="Study Arcade home">STUDY<span>ARCADE</span></button>
+  <div class="hud-top">
+    <div class="coins" id="coins" title="Total points earned">◉ 0</div>
+    <button class="icon-btn" id="muteBtn" aria-label="Toggle sound">🔊</button>
+  </div>
+</header>
+<main id="app"><noscript>Study Arcade needs JavaScript turned on.</noscript></main>
+<footer>AI-generated questions can be wrong. Check against the rules and your notes. Don't upload anything confidential.</footer>
+
+<script>
+"use strict";
+/* =====================================================================
+   CONFIG
+   ===================================================================== */
+// WARNING: anything you put in DEFAULT_KEY is visible to EVERY visitor
+// (View Source). Only use a separate key made just for this app, on an
+// account with no credits (free models only), and delete it when done.
+// Set it back to "" before sharing this code anywhere.
+const DEFAULT_KEY = "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";
+const DEFAULT_MODEL = "openrouter/free";
+const MODELS = [
+  { id: "openrouter/free", label: "openrouter/free (auto-picks an available free model)" },
+  { id: "nvidia/nemotron-3-super-120b-a12b:free", label: "NVIDIA Nemotron 3 Super 120B (free)" },
+  { id: "nvidia/nemotron-3.5-lightning:free", label: "NVIDIA Nemotron 3.5 Lightning (free)" },
+  { id: "custom", label: "Custom model ID…" }
+];
+const API_URL = "https://openrouter.ai/api/v1/chat/completions";
+const NOTES_CHAR_LIMIT = 20000;   // max characters of notes sent per request
+const REQUEST_TIMEOUT_MS = 300000;
+
+/* =====================================================================
+   BUILT-IN RULE BANK (short paraphrases of the Federal Rules of Evidence)
+   ===================================================================== */
+const TOPICS = [
+  { key: "relevance", label: "Relevance", range: "FRE 401–403", rules: [
+    { n: "401", name: "Test for relevant evidence", t: "Evidence is relevant if it has any tendency to make a fact more or less probable than it would be without the evidence, and the fact is of consequence in determining the action." },
+    { n: "402", name: "General admissibility of relevant evidence", t: "Relevant evidence is admissible unless the Constitution, a federal statute, these rules, or other Supreme Court rules provide otherwise. Irrelevant evidence is not admissible." },
+    { n: "403", name: "Excluding relevant evidence for prejudice, confusion, or waste of time", t: "The court may exclude relevant evidence if its probative value is substantially outweighed by a danger of unfair prejudice, confusing the issues, misleading the jury, undue delay, wasting time, or needlessly presenting cumulative evidence." }
+  ]},
+  { key: "character", label: "Character Evidence", range: "FRE 404–406, 412–415", rules: [
+    { n: "404(a)(1)", name: "Character evidence: prohibited uses", t: "Evidence of a person's character or character trait is not admissible to prove that on a particular occasion the person acted in accordance with the character or trait." },
+    { n: "404(a)(2)", name: "Character evidence: exceptions for a criminal defendant or victim", t: "In a criminal case, a defendant may offer evidence of the defendant's pertinent trait, and if the evidence is admitted, the prosecutor may offer evidence to rebut it. Subject to Rule 412, a defendant may offer evidence of an alleged victim's pertinent trait, and if admitted, the prosecutor may rebut it and offer evidence of the defendant's same trait." },
+    { n: "404(b)", name: "Other crimes, wrongs, or acts", t: "Evidence of any other crime, wrong, or act is not admissible to prove a person's character in order to show that on a particular occasion the person acted in accordance with the character. This evidence may be admissible for another purpose, such as proving motive, opportunity, intent, preparation, plan, knowledge, identity, absence of mistake, or lack of accident." },
+    { n: "405", name: "Methods of proving character", t: "When evidence of a person's character or character trait is admissible, it may be proved by testimony about the person's reputation or by testimony in the form of an opinion. On cross-examination of the character witness, the court may allow an inquiry into relevant specific instances of the person's conduct. When a person's character or character trait is an essential element of a charge, claim, or defense, it may also be proved by relevant specific instances of the person's conduct." },
+    { n: "406", name: "Habit; routine practice", t: "Evidence of a person's habit or an organization's routine practice may be admitted to prove that on a particular occasion the person or organization acted in accordance with the habit or routine practice, regardless of whether it is corroborated or whether there was an eyewitness." },
+    { n: "412", name: "Sex-offense cases: the victim", t: "In a civil or criminal proceeding involving alleged sexual misconduct, evidence offered to prove that a victim engaged in other sexual behavior or to prove a victim's sexual predisposition is not admissible, except in narrow circumstances the rule specifies." },
+    { n: "413–415", name: "Similar acts in sexual-assault and child-molestation cases", t: "In a criminal or civil case involving sexual assault or child molestation, the court may admit evidence that the defendant committed any other sexual assault or child molestation, and the evidence may be considered on any matter to which it is relevant." }
+  ]},
+  { key: "impeachment", label: "Impeachment & Witnesses", range: "FRE 607–613", rules: [
+    { n: "607", name: "Who may impeach a witness", t: "Any party, including the party that called the witness, may attack the witness's credibility." },
+    { n: "608", name: "A witness's character for truthfulness or untruthfulness", t: "A witness's credibility may be attacked or supported by testimony about the witness's reputation for having a character for truthfulness or untruthfulness, or by testimony in the form of an opinion about that character. Except for a criminal conviction under Rule 609, extrinsic evidence is not admissible to prove specific instances of a witness's conduct in order to attack or support the witness's character for truthfulness, but the court may allow them to be inquired into on cross-examination if they are probative of the character for truthfulness or untruthfulness." },
+    { n: "609", name: "Impeachment by evidence of a criminal conviction", t: "A witness's credibility may be attacked with a conviction for a crime punishable by more than one year, subject to Rule 403 for most witnesses and admitted against a criminal defendant only if the probative value outweighs its prejudicial effect to that defendant. A conviction for any crime must be admitted if establishing its elements required proving a dishonest act or false statement. Convictions more than 10 years old are admissible only in limited circumstances." },
+    { n: "610", name: "Religious beliefs or opinions", t: "Evidence of a witness's religious beliefs or opinions is not admissible to attack or support the witness's credibility." },
+    { n: "611(c)", name: "Leading questions", t: "Leading questions should not be used on direct examination except as necessary to develop the witness's testimony. Ordinarily, the court should allow leading questions on cross-examination and when a party calls a hostile witness, an adverse party, or a witness identified with an adverse party." },
+    { n: "612", name: "Writing used to refresh a witness's memory", t: "If a witness uses a writing to refresh memory, an adverse party is entitled to have the writing produced at the hearing, to inspect it, to cross-examine the witness about it, and to introduce in evidence any portion that relates to the witness's testimony." },
+    { n: "613", name: "Witness's prior statement", t: "Extrinsic evidence of a witness's prior inconsistent statement is admissible only if the witness is given an opportunity to explain or deny the statement and an adverse party is given an opportunity to examine the witness about it, or if justice so requires." }
+  ]},
+  { key: "hearsayDef", label: "Hearsay Definition", range: "FRE 801–802", rules: [
+    { n: "801(a)–(c)", name: "Definition of hearsay", t: "A statement means a person's oral assertion, written assertion, or nonverbal conduct, if the person intended it as an assertion. Hearsay means a statement that the declarant does not make while testifying at the current trial or hearing, and a party offers in evidence to prove the truth of the matter asserted in the statement." },
+    { n: "801(d)(1)", name: "Declarant-witness's prior statement", t: "A statement is not hearsay if the declarant testifies and is subject to cross-examination about a prior statement, and the statement is inconsistent with the declarant's testimony and was given under penalty of perjury at a trial, hearing, or other proceeding or in a deposition; is consistent with the declarant's testimony and is offered to rebut a charge that the declarant recently fabricated it or acted from a recent improper influence or motive, or to rehabilitate the declarant's credibility when attacked on another ground; or identifies a person as someone the declarant perceived earlier." },
+    { n: "801(d)(2)", name: "An opposing party's statement", t: "A statement is not hearsay if it is offered against an opposing party and was made by the party in an individual or representative capacity; is one the party manifested that it adopted or believed to be true; was made by a person whom the party authorized to make a statement on the subject; was made by the party's agent or employee on a matter within the scope of that relationship and while it existed; or was made by the party's coconspirator during and in furtherance of the conspiracy." },
+    { n: "802", name: "The rule against hearsay", t: "Hearsay is not admissible unless a federal statute, these rules, or other rules prescribed by the Supreme Court provide otherwise." }
+  ]},
+  { key: "hearsayExc", label: "Hearsay Exceptions", range: "FRE 803, 804, 807", rules: [
+    { n: "803(1)", name: "Present sense impression", t: "A statement describing or explaining an event or condition, made while or immediately after the declarant perceived it." },
+    { n: "803(2)", name: "Excited utterance", t: "A statement relating to a startling event or condition, made while the declarant was under the stress of excitement that it caused." },
+    { n: "803(3)", name: "Then-existing mental, emotional, or physical condition", t: "A statement of the declarant's then-existing state of mind (such as motive, intent, or plan) or emotional, sensory, or physical condition (such as mental feeling, pain, or bodily health), but not including a statement of memory or belief to prove the fact remembered or believed unless it relates to the validity or terms of the declarant's will." },
+    { n: "803(4)", name: "Statement made for medical diagnosis or treatment", t: "A statement that is made for, and is reasonably pertinent to, medical diagnosis or treatment, and describes medical history, past or present symptoms or sensations, their inception, or their general cause." },
+    { n: "803(5)", name: "Recorded recollection", t: "A record that is on a matter the witness once knew about but now cannot recall well enough to testify fully and accurately, was made or adopted by the witness when the matter was fresh in the witness's memory, and accurately reflects the witness's knowledge. If admitted, the record may be read into evidence but may be received as an exhibit only if offered by an adverse party." },
+    { n: "803(6)", name: "Records of a regularly conducted activity", t: "A record of an act, event, condition, opinion, or diagnosis, if the record was made at or near the time by, or from information transmitted by, someone with knowledge; the record was kept in the course of a regularly conducted activity of a business or organization; making the record was a regular practice of that activity; these conditions are shown by the testimony of the custodian or another qualified witness or by a certification; and the opponent does not show that the source of information or the method or circumstances of preparation indicate a lack of trustworthiness." },
+    { n: "803(8)", name: "Public records", t: "A record or statement of a public office if it sets out the office's activities; a matter observed while under a legal duty to report, but not including, in a criminal case, a matter observed by law-enforcement personnel; or, in a civil case or against the government in a criminal case, factual findings from a legally authorized investigation; and the opponent does not show that the source of information or other circumstances indicate a lack of trustworthiness." },
+    { n: "804(a)", name: "Criteria for being unavailable", t: "A declarant is considered to be unavailable as a witness if the declarant is exempted from testifying because the court rules that a privilege applies; refuses to testify despite a court order to do so; testifies to not remembering the subject matter; cannot be present or testify because of death or a then-existing infirmity, physical illness, or mental illness; or is absent and the proponent has not been able, by process or other reasonable means, to procure the declarant's attendance." },
+    { n: "804(b)(1)", name: "Former testimony", t: "Testimony that was given as a witness at a trial, hearing, or lawful deposition, and is now offered against a party who had, or, in a civil case, whose predecessor in interest had, an opportunity and similar motive to develop it by direct, cross-, or redirect examination." },
+    { n: "804(b)(2)", name: "Statement under the belief of imminent death", t: "In a prosecution for homicide or in a civil case, a statement that the declarant, while believing the declarant's death to be imminent, made about its cause or circumstances." },
+    { n: "804(b)(3)", name: "Statement against interest", t: "A statement that a reasonable person in the declarant's position would have made only if the person believed it to be true because, when made, it was so contrary to the declarant's proprietary or pecuniary interest or had so great a tendency to invalidate the declarant's claim against someone else or to expose the declarant to civil or criminal liability. In a criminal case, if offered to expose the declarant to criminal liability, it must be supported by corroborating circumstances that clearly indicate its trustworthiness." },
+    { n: "804(b)(6)", name: "Statement offered against a party that wrongfully caused the declarant's unavailability", t: "A statement offered against a party that wrongfully caused, or acquiesced in wrongfully causing, the declarant's unavailability as a witness, and did so intending that result." },
+    { n: "807", name: "Residual exception", t: "A hearsay statement not admissible under a hearsay exception in Rule 803 or 804 may be admitted if the statement is supported by sufficient guarantees of trustworthiness, after considering the totality of circumstances under which it was made and any evidence corroborating the statement, and it is more probative on the point for which it is offered than any other evidence that the proponent can obtain through reasonable efforts. The proponent must give the adverse party reasonable notice." }
+  ]},
+  { key: "opinion", label: "Lay & Expert Opinion", range: "FRE 602, 701–705", rules: [
+    { n: "602", name: "Need for personal knowledge", t: "A witness may testify to a matter only if evidence is introduced sufficient to support a finding that the witness has personal knowledge of the matter. This rule does not apply to a witness's expert testimony under Rule 703." },
+    { n: "701", name: "Opinion testimony by lay witnesses", t: "If a witness is not testifying as an expert, testimony in the form of an opinion is limited to one that is rationally based on the witness's perception; helpful to clearly understanding the witness's testimony or to determining a fact in issue; and not based on scientific, technical, or other specialized knowledge within the scope of Rule 702." },
+    { n: "702", name: "Testimony by expert witnesses", t: "A witness who is qualified as an expert by knowledge, skill, experience, training, or education may testify in the form of an opinion if the proponent demonstrates to the court that it is more likely than not that the expert's specialized knowledge will help the trier of fact; the testimony is based on sufficient facts or data; the testimony is the product of reliable principles and methods; and the expert's opinion reflects a reliable application of the principles and methods to the facts of the case." },
+    { n: "703", name: "Bases of an expert's opinion", t: "An expert may base an opinion on facts or data in the case that the expert has been made aware of or personally observed. If experts in the particular field would reasonably rely on those kinds of facts or data, they need not be admissible for the opinion to be admitted. Otherwise inadmissible facts or data may be disclosed to the jury only if their probative value in helping the jury evaluate the opinion substantially outweighs their prejudicial effect." },
+    { n: "704", name: "Opinion on an ultimate issue", t: "An opinion is not objectionable just because it embraces an ultimate issue. In a criminal case, an expert witness must not state an opinion about whether the defendant did or did not have a mental state or condition that constitutes an element of the crime charged or of a defense." },
+    { n: "705", name: "Disclosing the facts or data underlying an expert's opinion", t: "Unless the court orders otherwise, an expert may state an opinion and give the reasons for it without first testifying to the underlying facts or data. But the expert may be required to disclose those facts or data on cross-examination." }
+  ]},
+  { key: "authBest", label: "Authentication & Best Evidence", range: "FRE 901–903, 1001–1004", rules: [
+    { n: "901(a)", name: "Authenticating or identifying evidence", t: "To satisfy the requirement of authenticating or identifying an item of evidence, the proponent must produce evidence sufficient to support a finding that the item is what the proponent claims it is." },
+    { n: "901(b)", name: "Examples of authentication", t: "Examples include testimony of a witness with knowledge, nonexpert opinion about handwriting based on familiarity not acquired for the current litigation, comparison by an expert witness or the trier of fact, distinctive characteristics, opinion identifying a person's voice, evidence about a telephone conversation, evidence about public records, evidence about ancient documents at least 20 years old, and evidence describing a process or system that produces an accurate result." },
+    { n: "902", name: "Evidence that is self-authenticating", t: "Certain items of evidence are self-authenticating and require no extrinsic evidence of authenticity in order to be admitted, including sealed and signed domestic public documents, certified copies of public records, official publications, newspapers and periodicals, trade inscriptions, acknowledged documents, commercial paper, and certified domestic or foreign records of a regularly conducted activity." },
+    { n: "903", name: "Subscribing witness's testimony", t: "A subscribing witness's testimony is necessary to authenticate a writing only if required by the law of the jurisdiction that governs its validity." },
+    { n: "1001", name: "Definitions for the best evidence rule", t: "An original of a writing or recording means the writing or recording itself or any counterpart intended to have the same effect by the person who executed or issued it. For electronically stored information, original means any printout or other output readable by sight if it accurately reflects the information. A duplicate means a counterpart produced by a mechanical, photographic, chemical, electronic, or other equivalent process or technique that accurately reproduces the original." },
+    { n: "1002", name: "Requirement of the original", t: "An original writing, recording, or photograph is required in order to prove its content unless these rules or a federal statute provides otherwise." },
+    { n: "1003", name: "Admissibility of duplicates", t: "A duplicate is admissible to the same extent as the original unless a genuine question is raised about the original's authenticity or the circumstances make it unfair to admit the duplicate." },
+    { n: "1004", name: "Admissibility of other evidence of content", t: "An original is not required and other evidence of the content of a writing, recording, or photograph is admissible if all the originals are lost or destroyed, and not by the proponent acting in bad faith; an original cannot be obtained by any available judicial process; the party against whom the original would be offered had control of the original, was at that time put on notice that the original would be a subject of proof, and fails to produce it at the trial or hearing; or the writing, recording, or photograph is not closely related to a controlling issue." }
+  ]},
+  { key: "privileges", label: "Privileges", range: "FRE 501–502", rules: [
+    { n: "501", name: "Privilege in general", t: "The common law, as interpreted by United States courts in the light of reason and experience, governs a claim of privilege unless the United States Constitution, a federal statute, or rules prescribed by the Supreme Court provide otherwise. But in a civil case, state law governs privilege regarding a claim or defense for which state law supplies the rule of decision." },
+    { n: "501 (common law)", name: "Attorney-client privilege", t: "The attorney-client privilege protects confidential communications between a client and a lawyer made for the purpose of obtaining or providing legal advice. It is held by the client and is waived by voluntary disclosure to third parties. It does not protect communications in furtherance of a future crime or fraud." },
+    { n: "501 (common law)", name: "Spousal privileges", t: "Under federal common law, the witness spouse may refuse to testify adversely against a defendant spouse in a criminal case, and either spouse may prevent disclosure of confidential communications made during a valid marriage." },
+    { n: "502(b)", name: "Inadvertent disclosure", t: "A disclosure of attorney-client privileged or work-product material does not operate as a waiver if the disclosure is inadvertent, the holder of the privilege or protection took reasonable steps to prevent disclosure, and the holder promptly took reasonable steps to rectify the error." },
+    { n: "502(a)", name: "Scope of a waiver", t: "When a disclosure waives the attorney-client privilege or work-product protection, the waiver extends to an undisclosed communication or information only if the waiver is intentional, the disclosed and undisclosed communications or information concern the same subject matter, and they ought in fairness to be considered together." },
+    { n: "502(d)", name: "Controlling effect of a court order", t: "A federal court may order that the privilege or protection is not waived by disclosure connected with the litigation pending before the court, in which event the disclosure is also not a waiver in any other federal or state proceeding." }
+  ]}
+];
+const TOPIC_KEYS = TOPICS.map(t => t.key);
+const TOPIC_BY_KEY = Object.fromEntries(TOPICS.map(t => [t.key, t]));
+const ALL_RULES = TOPICS.flatMap(t => t.rules.map(r => ({ ...r, topic: t.key })));
+const BANK_PROMPT = TOPICS.map(t =>
+  `## [${t.key}] ${t.label} (${t.range})\n` + t.rules.map(r => `FRE ${r.n} (${r.name}): ${r.t}`).join("\n")
+).join("\n\n");
+
+const SAMPLE_NOTES = `EVIDENCE: HEARSAY UNIT (sample notes)
+
+1. Definition (FRE 801(c))
+Hearsay = (1) a statement, (2) made by the declarant other than while testifying at the current trial, (3) offered to prove the truth of the matter asserted. Always ask: what is the statement being offered to prove?
+
+Not offered for truth (so not hearsay): verbal acts or legally operative words (a contract offer, defamatory words), effect on the listener (a warning shows notice), circumstantial evidence of the declarant's state of mind, and impeachment with a prior inconsistent statement.
+
+2. Exclusions: FRE 801(d)
+Prior statements of a testifying witness (801(d)(1)): an inconsistent statement given under penalty of perjury; a consistent statement offered to rebut a charge of recent fabrication; a prior identification.
+Tome v. United States (1995): a prior consistent statement offered to rebut a charge of recent fabrication is admissible only if it was made before the alleged motive to fabricate arose.
+Opposing party's statements (801(d)(2)): own statement, adopted, authorized, agent or employee within scope, coconspirator during and in furtherance.
+Bourjaily v. United States (1987): the court decides preliminary facts for a coconspirator statement by a preponderance of the evidence and may consider the statement itself.
+
+3. Exceptions where availability is immaterial (FRE 803)
+Present sense impression: describes the event while or immediately after the declarant perceived it.
+Excited utterance: a startling event plus a statement made under the stress of the excitement. The time gap is not decisive; ask whether the declarant was still under stress.
+State of mind (803(3)): Mutual Life Insurance Co. v. Hillmon (1892): letters stating Walters' intent to travel with Hillmon were admissible to show Walters' intent and, from that, that he likely went.
+Medical diagnosis or treatment: statements about the cause of an injury are fine, but statements assigning fault usually are not.
+Business records (803(6)): made at or near the time, by someone with knowledge, kept in the regular course of business, and it was a regular practice to make the record.
+
+4. Exceptions requiring the declarant to be unavailable (FRE 804)
+Dying declaration: homicide prosecution or civil case; the declarant believed death was imminent; the statement concerns the cause or circumstances of death.
+Shepard v. United States (1933): Mrs. Shepard's statement "Dr. Shepard has poisoned me" was not a dying declaration because she did not speak with a settled, hopeless expectation of death.
+Statement against interest: Williamson v. United States (1994): only the individual self-inculpatory statements qualify, not collateral statements in a broader narrative.
+
+5. Confrontation Clause
+Crawford v. Washington (2004): testimonial statements of a witness absent from trial are admissible against a criminal defendant only if the witness is unavailable and the defendant had a prior opportunity for cross-examination.`;
+
+/* =====================================================================
+   GAME DEFINITIONS
+   ===================================================================== */
+const GAMES = {
+  objection: { name: "OBJECTION!", icon: "⚖️", blurb: "Rule on a trial transcript line by line. Let it in, or object and name the ground.",
+    how: ["Each round is a short trial transcript, revealed one line at a time.", "Hit LET IT IN, or OBJECTION! and pick the ground: hearsay, relevance/403, character, leading, speculation, or lay opinion.", "Fast correct calls earn a time bonus. Every 3 in a row raises your multiplier.", "Keys: L = let it in, O = object, 1–6 = ground, Enter = next."] },
+  element: { name: "ELEMENT CHECK", icon: "☑️", blurb: "Read a fact pattern, check which elements of the rule are met, then call the outcome.",
+    how: ["Each problem gives you a rule broken into elements and a short fact pattern.", "Tap each element that the facts SATISFY. Leave the rest unchecked.", "Then pick Admissible or Inadmissible under that rule.", "Each element and the outcome are graded separately, so partial credit counts."] },
+  rapid: { name: "RAPID FIRE", icon: "⚡", blurb: "Timed multiple choice. 20 seconds a question, 3 lives, streak multiplier.",
+    how: ["Up to 12 questions per round, 20 seconds each.", "A wrong answer or running out of time costs a life. Three lives and you're out.", "Fast answers earn bonus points. Every 3 in a row raises your 🔥 multiplier (up to x4).", "Keys: 1–4 to answer, Enter for next."] },
+  match: { name: "MATCH", icon: "🔗", blurb: "Pair rule numbers with what they do, and cases with their holdings, against the clock.",
+    how: ["Six pairs per round in two columns.", "Click an item on the left, then its match on the right.", "Correct pairs lock in green. Wrong pairs shake and count as a mistake.", "Score depends on time and mistakes. Your best time is saved."] },
+  weak: { name: "WEAK SPOTS", icon: "🎯", blurb: "A mixed round of Rapid Fire and Element Check from your two weakest topics.",
+    how: ["Pulls Rapid Fire and Element Check questions from your two weakest topics.", "No lives here. Rapid Fire questions are still timed.", "If there aren't enough questions for those topics, you can generate more."] }
+};
+const GROUNDS = [
+  { k: "hearsay", label: "Hearsay", topic: "hearsayDef" },
+  { k: "relevance", label: "Relevance / 403", topic: "relevance" },
+  { k: "character", label: "Improper character", topic: "character" },
+  { k: "leading", label: "Leading", topic: "impeachment" },
+  { k: "speculation", label: "Speculation / no personal knowledge", topic: "opinion" },
+  { k: "opinion", label: "Lay opinion", topic: "opinion" }
+];
+const groundLabel = k => (GROUNDS.find(g => g.k === k) || { label: k }).label;
+
+/* =====================================================================
+   STATE (localStorage, wrapped so the app works without it)
+   ===================================================================== */
+const LS_KEY = "studyArcade.evidence.v1";
+function defaultState() {
+  return { settings: { model: DEFAULT_MODEL, customModel: "", apiKey: "", muted: false },
+    notes: "", packs: { objection: [], element: [], rapid: [], match: [] }, packMeta: {},
+    mastery: {}, highs: {}, bestTime: null, coins: 0, missed: [] };
+}
+let S = defaultState();
+try {
+  const saved = JSON.parse(localStorage.getItem(LS_KEY) || "null");
+  if (saved && typeof saved === "object") {
+    const d = defaultState();
+    S = Object.assign(d, saved);
+    S.settings = Object.assign(defaultState().settings, saved.settings || {});
+    S.packs = Object.assign(defaultState().packs, saved.packs || {});
+  }
+} catch (e) { /* storage unavailable: start fresh */ }
+function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } }
+
+const currentKey = () => (S.settings.apiKey || "").trim() || DEFAULT_KEY;
+const currentModel = () => S.settings.model === "custom" ? ((S.settings.customModel || "").trim() || DEFAULT_MODEL) : (S.settings.model || DEFAULT_MODEL);
+
+/* =====================================================================
+   HELPERS
+   ===================================================================== */
+const app = document.getElementById("app");
+let cleanup = [];
+let keyHandler = null;
+let inGame = false;
+
+function el(tag, props, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k === "text") n.textContent = v;
+    else if (k === "style") n.style.cssText = v;
+    else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat(Infinity)) {
+    if (c == null || c === false) continue;
+    n.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return n;
+}
+function screen(...kids) {
+  cleanup.forEach(f => { try { f(); } catch (e) {} });
+  cleanup = []; keyHandler = null; inGame = false;
+  app.replaceChildren(...kids.flat(Infinity).filter(k => k != null && k !== false));
+  window.scrollTo(0, 0);
+}
+document.addEventListener("keydown", e => {
+  if (!keyHandler) return;
+  if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  keyHandler(e);
+});
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const arr = x => Array.isArray(x) ? x : [];
+const clean = (s, max = 700) => String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, max);
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const fmt = n => Math.round(n).toLocaleString();
+const fmtTime = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+function hash(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return String(h >>> 0); }
+const notesHash = () => hash((S.notes || "").trim());
+function updateCoins() { document.getElementById("coins").textContent = "◉ " + fmt(S.coins || 0); }
+function updateMute() { document.getElementById("muteBtn").textContent = S.settings.muted ? "🔇" : "🔊"; }
+
+/* ---------- grounding check ---------- */
+function norm(s) {
+  return String(s || "").toLowerCase()
+    .replace(/[‘’‛`´]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+}
+const BANK_NORM = norm(BANK_PROMPT);
+let notesCache = { src: null, val: "" };
+function notesNorm() { if (notesCache.src !== S.notes) notesCache = { src: S.notes, val: norm(S.notes) }; return notesCache.val; }
+function verifySource(src) {
+  const frags = String(src || "").split(/\.\.\.|…|\[\.\.\.\]/).map(norm).filter(f => f.length >= 12);
+  if (!frags.length) return null;
+  if (S.notes && frags.every(f => notesNorm().includes(f))) return "notes";
+  if (frags.every(f => BANK_NORM.includes(f))) return "rules";
+  return null;
+}
+function sourceBox(item) {
+  if (!item.source) return el("div", { class: "src unverified" }, el("div", { class: "src-h" }, "Source", el("span", { class: "badge warn" }, "? UNVERIFIED")), el("div", { class: "small muted" }, "No source quote was given."));
+  const v = verifySource(item.source);
+  const label = v === "notes" ? "From your notes" : v === "rules" ? "From the rules" : (item.sourceType === "notes" ? "From your notes" : "From the rules");
+  const tip = v ? `This exact text appears in ${v === "notes" ? "the notes you provided" : "the built-in FRE rule bank"}.` : "This quote could not be found word-for-word in the rule bank or your notes. Double-check it.";
+  return el("div", { class: "src " + (v ? "verified" : "unverified") },
+    el("div", { class: "src-h" }, el("span", {}, label), el("span", { class: "badge " + (v ? "ok" : "warn"), title: tip }, v ? "✓ VERIFIED" : "? UNVERIFIED")),
+    el("blockquote", {}, "“" + item.source + "”"));
+}
+function srcLabelText(item) {
+  const v = verifySource(item.source);
+  const label = v === "notes" ? "From your notes" : v === "rules" ? "From the rules" : (item.sourceType === "notes" ? "From your notes" : "From the rules");
+  return `${label}, ${v ? "Verified" : "Unverified"}`;
+}
+
+/* ---------- topic helpers ---------- */
+function normTopic(t, hint) {
+  const s = String(t || "").toLowerCase().replace(/[^a-z]/g, "");
+  for (const k of TOPIC_KEYS) if (s === k.toLowerCase()) return k;
+  const alias = { hearsayexception: "hearsayExc", hearsaydefinition: "hearsayDef", hearsaydef: "hearsayDef", exception: "hearsayExc",
+    relevan: "relevance", character: "character", impeach: "impeachment", witness: "impeachment", hearsay: "hearsayDef",
+    opinion: "opinion", expert: "opinion", authent: "authBest", bestevidence: "authBest", original: "authBest", privilege: "privileges" };
+  for (const a of Object.keys(alias).sort((x, y) => y.length - x.length)) if (s && s.includes(a)) return alias[a];
+  const m = String(hint || "").match(/\b(40[1-6]|41[2-5]|50[12]|60[2-9]|61[0-3]|70[1-6]|80[1-7]|90[1-3]|100[1-4])\b/);
+  if (m) {
+    const n = +m[1];
+    if (n <= 403) return "relevance"; if (n <= 415) return "character"; if (n <= 502) return "privileges";
+    if (n === 602 || (n >= 701 && n <= 706)) return "opinion"; if (n <= 613) return "impeachment";
+    if (n <= 802) return "hearsayDef"; if (n <= 807) return "hearsayExc"; return "authBest";
+  }
+  return null;
+}
+function normGround(g) {
+  const s = String(g || "").toLowerCase();
+  if (!s || s === "none" || s === "n/a" || s === "null") return "none";
+  if (s.includes("hearsay")) return "hearsay";
+  if (s.includes("relev") || s.includes("403") || s.includes("prejud")) return "relevance";
+  if (s.includes("charact") || s.includes("propens") || s.includes("404")) return "character";
+  if (s.includes("lead")) return "leading";
+  if (s.includes("specul") || s.includes("knowledge") || s.includes("602") || s.includes("foundation")) return "speculation";
+  if (s.includes("opinion") || s.includes("701")) return "opinion";
+  return null;
+}
+
+/* ---------- mastery & weighting ---------- */
+function recordMastery(topic, frac) {
+  if (!topic) return;
+  const m = S.mastery[topic] || { c: 0, t: 0 };
+  m.c += frac; m.t += 1; S.mastery[topic] = m;
+}
+const masteryPct = k => { const m = S.mastery[k]; return m && m.t ? m.c / m.t : null; };
+function weakestTopics() {
+  const tried = TOPIC_KEYS.filter(k => masteryPct(k) !== null).sort((a, b) => masteryPct(a) - masteryPct(b));
+  const untried = TOPIC_KEYS.filter(k => masteryPct(k) === null);
+  return tried.concat(untried).slice(0, 2);
+}
+const triedWeakest = () => TOPIC_KEYS.filter(k => masteryPct(k) !== null).sort((a, b) => masteryPct(a) - masteryPct(b)).slice(0, 2);
+function topicWeight(k) { const p = masteryPct(k); return p === null ? 2.5 : 1 + 3 * (1 - p); }
+function pickWeighted(pool, n, uniq) {
+  let rest = pool.slice(); const out = [];
+  while (out.length < n && rest.length) {
+    const ws = rest.map(it => topicWeight(it.topic) * (it.played ? 1 : 3));
+    let r = Math.random() * ws.reduce((a, b) => a + b, 0), i = 0;
+    for (; i < ws.length - 1; i++) { r -= ws[i]; if (r <= 0) break; }
+    const pick = rest.splice(i, 1)[0]; out.push(pick);
+    if (uniq) rest = rest.filter(x => !uniq(x, pick));
+  }
+  return out;
+}
+const streakMult = s => Math.min(4, 1 + Math.floor(s / 3));
+
+/* =====================================================================
+   SOUND (Web Audio beeps)
+   ===================================================================== */
+const Sound = {
+  ctx: null,
+  tone(f, d, type = "square", at = 0, vol = 0.05) {
+    const c = this.ctx, t = c.currentTime + at, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + d + 0.02);
+  },
+  play(kind) {
+    if (S.settings.muted) return;
+    try {
+      if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (this.ctx.state === "suspended") this.ctx.resume();
+      const T = (...a) => this.tone(...a);
+      if (kind === "good") { T(660, .09); T(990, .14, "square", .08); }
+      else if (kind === "bad") { T(200, .12, "sawtooth", 0, .06); T(140, .25, "sawtooth", .1, .06); }
+      else if (kind === "click") { T(520, .04, "square", 0, .03); }
+      else if (kind === "coin") { T(988, .07); T(1319, .3, "square", .07); }
+      else if (kind === "gavel") { T(110, .08, "triangle", 0, .2); T(90, .12, "triangle", .1, .2); }
+      else if (kind === "high") { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => T(f, .14, "square", i * .11)); }
+      else if (kind === "over") { [392, 330, 262].forEach((f, i) => T(f, .2, "triangle", i * .18, .07)); }
+    } catch (e) { /* audio unavailable */ }
+  }
+};
+
+/* =====================================================================
+   OPENROUTER
+   ===================================================================== */
+class AppError extends Error { constructor(code, msg) { super(msg); this.code = code; } }
+async function callAI(messages, signal) {
+  const key = currentKey();
+  if (!key) throw new AppError("NO_KEY", "Add your OpenRouter API key to generate questions.");
+  const ctrl = new AbortController(); let timedOut = false;
+  const onAbort = () => ctrl.abort();
+  if (signal) signal.addEventListener("abort", onAbort);
+  const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, REQUEST_TIMEOUT_MS);
+  const headers = { "Authorization": "Bearer " + key, "Content-Type": "application/json", "X-Title": "Study Arcade" };
+  if (/^https?:/.test(location.protocol)) headers["HTTP-Referer"] = location.origin;
+  let res, data;
+  try {
+    res = await fetch(API_URL, { method: "POST", headers, signal: ctrl.signal,
+      body: JSON.stringify({ model: currentModel(), messages, temperature: 0.7 }) });
+    data = await res.json().catch(() => null);
+  } catch (e) {
+    if (timedOut) throw new AppError("TIMEOUT", "The model took too long to answer. Free models can be busy, so try again or pick a different model in Advanced settings.");
+    if (e.name === "AbortError") throw e;
+    throw new AppError("NETWORK", "Couldn't reach OpenRouter. Check your internet connection and try again.");
+  } finally { clearTimeout(timer); if (signal) signal.removeEventListener("abort", onAbort); }
+  const apiMsg = data && data.error && (data.error.message || data.error.code);
+  if (!res.ok) {
+    const map = { 401: "OpenRouter rejected the API key. Check that it was copied correctly.",
+      402: "OpenRouter says this request needs credits. Make sure you're using a free model (ID ending in :free, or openrouter/free).",
+      404: "That model wasn't found or has no available provider right now. Pick another model in Advanced settings.",
+      429: "Rate limited: free models allow a limited number of requests per minute. Wait a moment and try again." };
+    const usingBuiltIn = !(S.settings.apiKey || "").trim() && !!DEFAULT_KEY;
+    const hint = usingBuiltIn && [401, 402, 429].includes(res.status)
+      ? " The built-in key is shared by everyone using this app. You can paste your own free OpenRouter key under Notes & settings → Advanced." : "";
+    throw new AppError("HTTP_" + res.status, (map[res.status] || `OpenRouter error ${res.status}.`) + (apiMsg ? ` (${apiMsg})` : "") + hint);
+  }
+  const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if (!content) throw new AppError("EMPTY", "The model returned an empty answer" + (apiMsg ? ` (${apiMsg})` : "") + ". Try again or pick another model.");
+  return { content: String(content), model: data.model || currentModel() };
+}
+
+/* Strip fences, find the outermost JSON object, salvage cut-off arrays. */
+function extractJSON(raw) {
+  let t = String(raw || "").replace(/<think>[\s\S]*?<\/think>/gi, "");
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/i);
+  if (fence && fence[1].includes("{")) t = fence[1];
+  const ob = t.indexOf("{"), ab = t.indexOf("[");
+  const start = ab >= 0 && (ob < 0 || ab < ob) ? ab : ob;
+  if (start < 0) throw new AppError("PARSE", "The model didn't return any JSON. Try again, or pick another model in Advanced settings.");
+  const stack = []; let inStr = false, esc = false, safeEnd = -1, safeStack = null;
+  for (let i = start; i < t.length; i++) {
+    const ch = t[i];
+    if (inStr) { if (esc) esc = false; else if (ch === "\\") esc = true; else if (ch === '"') inStr = false; continue; }
+    if (ch === '"') { inStr = true; continue; }
+    if (ch === "{" || ch === "[") { stack.push(ch); continue; }
+    if (ch === "}" || ch === "]") {
+      stack.pop();
+      if (!stack.length) return wrapArr(tryParse(t.slice(start, i + 1)));
+      if (stack.length <= 2 && stack[stack.length - 1] === "[") { safeEnd = i; safeStack = stack.slice(); }
+    }
+  }
+  if (safeEnd > 0) {   // response was cut off: keep the complete items
+    let s = t.slice(start, safeEnd + 1);
+    for (let k = safeStack.length - 1; k >= 0; k--) s += safeStack[k] === "{" ? "}" : "]";
+    return wrapArr(tryParse(s));
+  }
+  throw new AppError("PARSE", "The model's answer was cut off before it finished. Try again.");
+}
+const wrapArr = v => Array.isArray(v) ? { items: v, rounds: v } : v;
+function tryParse(s) {
+  try { return JSON.parse(s); } catch (e) {
+    try { return JSON.parse(s.replace(/,\s*([}\]])/g, "$1")); }
+    catch (e2) { throw new AppError("PARSE", "The model's JSON was malformed. Try again, or pick another model in Advanced settings."); }
+  }
+}
+
+/* ---------- prompts ---------- */
+const SYS = "You are an expert Evidence law professor who writes study questions on the U.S. Federal Rules of Evidence (FRE) for law students. You are precise about the rules and never invent rule numbers or case holdings. You reply with ONLY one valid JSON object: no markdown, no code fences, no commentary before or after it.";
+function notesForPrompt() {
+  const n = (S.notes || "").trim();
+  if (n.length <= NOTES_CHAR_LIMIT) return n;
+  const start = Math.floor(Math.random() * (n.length - NOTES_CHAR_LIMIT));
+  const nl = n.indexOf("\n", start);
+  const from = nl >= 0 && nl - start < 1500 ? nl + 1 : start;
+  return n.slice(from, from + NOTES_CHAR_LIMIT);
+}
+function contextBlock() {
+  const notes = notesForPrompt();
+  return `RULE BANK (topic keys in square brackets):\n${BANK_PROMPT}\n\n` +
+    (notes ? `STUDENT'S COURSE NOTES (reflect the professor's cases, examples, and emphasis):\n"""\n${notes}\n"""\n\nAt least half of the items should draw directly on the student's notes.\n\n`
+           : "No course notes were provided, so rely on the rule bank.\n\n");
+}
+function sourceRules(focus) {
+  return `\n\nSOURCE AND TOPIC RULES (apply to every item):\n- "source" must be copied VERBATIM (word for word, 8 to 40 consecutive words) from the RULE BANK or the STUDENT'S COURSE NOTES above. Do not paraphrase it and do not include the "FRE ..." label.\n- "sourceType" is "rules" if the quote came from the rule bank or "notes" if it came from the notes.\n- "topic" must be exactly one of: ${TOPIC_KEYS.join(", ")}.` +
+    (focus ? `\n- FOCUS: every item must use topic ${focus.map(k => `"${k}" (${TOPIC_BY_KEY[k].label})`).join(" or ")}.` : `\n- Spread the items across all eight topics.`) +
+    `\nReturn ONLY the JSON object.`;
+}
+const GEN = {
+  rapid: { n: 15, focusN: 6, prompt: n => `TASK: Write ${n} multiple-choice questions for a timed quiz game.
+Return JSON in exactly this shape:
+{"items":[{"topic":"hearsayExc","question":"...","choices":["...","...","...","..."],"answer":0,"explanation":"One sentence explaining why the answer is right.","source":"verbatim quote","sourceType":"rules"}]}
+Requirements: exactly 4 choices with exactly one correct; "answer" is the 0-based index of the correct choice; vary which position is correct. Mix short fact-pattern questions (e.g. "Is this hearsay?", "Which exception fits best?") with rule-knowledge questions. Questions under 45 words, choices under 15 words, and wrong choices should be plausible.` },
+  element: { n: 8, focusN: 4, prompt: n => `TASK: Write ${n} "element check" problems. Each problem picks ONE rule or exception that has 2 to 5 distinct elements (for example: excited utterance 803(2), present sense impression 803(1), dying declaration 804(b)(2), statement against interest 804(b)(3), business records 803(6), 404(b) other-act evidence, impeachment by conviction 609, agent statement 801(d)(2)(D), prior inconsistent statement 801(d)(1)(A), lay opinion 701, expert testimony 702, authentication 901, best evidence 1002/1004, inadvertent disclosure 502(b)) and gives a 2 to 4 sentence fact pattern in which some elements may be satisfied and some may not.
+Return JSON in exactly this shape:
+{"items":[{"topic":"hearsayExc","rule":"Dying declaration (FRE 804(b)(2))","facts":"...","elements":[{"text":"Declarant is unavailable","met":true,"why":"One short sentence."}],"outcome":"admissible","explanation":"One or two sentences.","source":"verbatim quote","sourceType":"rules"}]}
+Requirements: element text must be neutral and must not reveal whether it is met. "outcome" is "admissible" only if every element is met (admissible under THIS rule), otherwise "inadmissible". About half the problems should be inadmissible.` },
+  objection: { n: 2, focusN: 2, prompt: n => `TASK: Write ${n} short mock trial transcripts for an objection game. Each transcript has 10 to 12 lines that alternate between an attorney question (speaker "Q") and a witness answer (speaker "A"), plus a one-sentence "setup" saying what the case is and whether this is direct or cross-examination.
+For each line, decide how a judge applying the FRE should rule if opposing counsel objected at that moment:
+- "ruling": "sustained" or "overruled"
+- "ground": if sustained, exactly one of "hearsay", "relevance", "character", "leading", "speculation", "opinion"; if overruled, "none".
+Ground meanings: hearsay = out-of-court statement offered for its truth with no exclusion or exception; relevance = irrelevant, or a Rule 403 problem; character = improper character or propensity evidence (404, 405, 608, 609); leading = leading question on direct (611(c)); speculation = guessing or no personal knowledge (602); opinion = improper lay opinion (701).
+Make about 40 to 50 percent of lines objectionable, use every ground at least once across the transcripts, and include tricky lines that should be OVERRULED (statements not offered for their truth, opposing-party statements, excited utterances, leading questions on cross, proper lay opinion).
+Return JSON in exactly this shape:
+{"rounds":[{"title":"State v. Ortiz","setup":"...","lines":[{"speaker":"Q","text":"...","ruling":"overruled","ground":"none","topic":"relevance","reason":"One sentence explaining the correct ruling.","source":"verbatim quote","sourceType":"rules"}]}]}` },
+  match: { n: 18, focusN: 8, prompt: n => `TASK: Write ${n} matching pairs for a memory-match game. "left" is a short label (at most 6 words) and "right" is a short description (at most 14 words) that matches ONLY that left label.
+Mix two kinds: (1) "rule": an FRE rule number as left (e.g. "FRE 803(2)") and what it does as right (e.g. "Statement about a startling event made under its stress"); (2) "case": if the student's notes mention cases, the case name as left and its holding as right. Use only cases that appear in the notes; if there are none, make every pair a "rule" pair.
+Every left label must be unique, and every right description must be clearly distinguishable from the others.
+Return JSON in exactly this shape:
+{"items":[{"kind":"rule","topic":"hearsayExc","left":"FRE 803(2)","right":"...","source":"verbatim quote","sourceType":"rules"}]}` }
+};
+
+/* ---------- validation (discard malformed items) ---------- */
+const srcType = v => String(v || "").toLowerCase().startsWith("note") ? "notes" : "rules";
+const truthy = v => v === true || /^(true|yes|met|y)$/i.test(String(v).trim());
+const VALIDATE = {
+  rapid(obj) {
+    return arr(obj.items || obj.questions).map(it => {
+      const choices = arr(it.choices || it.options).map(c => clean(c, 200)).filter(Boolean);
+      let ans = Number(it.answer);
+      if (typeof it.answer === "string" && /^\s*[A-Da-d]\s*$/.test(it.answer)) ans = it.answer.trim().toUpperCase().charCodeAt(0) - 65;
+      else if (typeof it.answer === "string" && !/^\s*\d+\s*$/.test(it.answer)) ans = choices.findIndex(c => c.toLowerCase() === it.answer.trim().toLowerCase());
+      const q = clean(it.question);
+      if (!q || choices.length !== 4 || !(ans >= 0 && ans < 4)) return null;
+      if (new Set(choices.map(c => c.toLowerCase())).size !== 4) return null;
+      const topic = normTopic(it.topic, q + " " + (it.source || ""));
+      if (!topic) return null;
+      return { type: "rapid", topic, question: q, choices, answer: ans, explanation: clean(it.explanation), source: clean(it.source, 500), sourceType: srcType(it.sourceType) };
+    }).filter(Boolean);
+  },
+  element(obj) {
+    return arr(obj.items || obj.problems).map(it => {
+      const elements = arr(it.elements).map(e => ({ text: clean(e && e.text, 220), met: truthy(e && e.met), why: clean(e && e.why, 300) })).filter(e => e.text);
+      const facts = clean(it.facts, 900), rule = clean(it.rule, 140);
+      if (!facts || !rule || elements.length < 2 || elements.length > 6) return null;
+      const topic = normTopic(it.topic, rule + " " + (it.source || ""));
+      if (!topic) return null;
+      const outcome = elements.every(e => e.met) ? "admissible" : "inadmissible"; // keep outcome consistent with elements
+      return { type: "element", topic, rule, facts, elements, outcome, explanation: clean(it.explanation), source: clean(it.source, 500), sourceType: srcType(it.sourceType) };
+    }).filter(Boolean);
+  },
+  objection(obj) {
+    return arr(obj.rounds || obj.transcripts).map(r => {
+      const lines = arr(r && r.lines).map(l => {
+        const text = clean(l && l.text, 500); if (!text) return null;
+        const sp = String(l.speaker || "").toLowerCase();
+        const speaker = sp.startsWith("q") || /attorney|counsel|lawyer|prosecutor/.test(sp) ? "Q" : "A";
+        const sustained = /sustain/i.test(String(l.ruling || ""));
+        let ground = normGround(l.ground);
+        if (sustained && (!ground || ground === "none")) return null;
+        if (!sustained) ground = "none";
+        const topic = normTopic(l.topic, (l.reason || "") + " " + (l.source || "")) || (sustained ? GROUNDS.find(g => g.k === ground).topic : "relevance");
+        return { speaker, text, ruling: sustained ? "sustained" : "overruled", ground, topic, reason: clean(l.reason), source: clean(l.source, 500), sourceType: srcType(l.sourceType) };
+      }).filter(Boolean);
+      if (lines.length < 6) return null;
+      return { title: clean(r.title, 80) || "Mock Trial", setup: clean(r.setup, 400), lines };
+    }).filter(Boolean);
+  },
+  match(obj) {
+    const seenL = new Set(), seenR = new Set();
+    return arr(obj.items || obj.pairs).map(it => {
+      const left = clean(it.left, 70), right = clean(it.right, 170);
+      if (!left || !right) return null;
+      const kl = left.toLowerCase(), kr = right.toLowerCase();
+      if (seenL.has(kl) || seenR.has(kr)) return null;
+      const topic = normTopic(it.topic, left + " " + right + " " + (it.source || ""));
+      if (!topic) return null;
+      seenL.add(kl); seenR.add(kr);
+      return { type: "match", kind: it.kind === "case" ? "case" : "rule", topic, left, right, source: clean(it.source, 500), sourceType: srcType(it.sourceType) };
+    }).filter(Boolean);
+  }
+};
+
+async function generate(game, { focus = null, append = false, signal } = {}) {
+  const g = GEN[game];
+  const n = focus ? g.focusN : g.n;
+  const user = contextBlock() + g.prompt(n) + sourceRules(game === "objection" ? null : focus);
+  const { content, model } = await callAI([{ role: "system", content: SYS }, { role: "user", content: user }], signal);
+  let items = VALIDATE[game](extractJSON(content));
+  if (focus && game !== "objection") {
+    const focused = items.filter(it => focus.includes(it.topic));
+    if (focused.length) items = focused;
+  }
+  if (!items.length) throw new AppError("PARSE", "The model's answer didn't contain any usable questions. Try again, or pick another model in Advanced settings.");
+  items.forEach(it => { it.id = uid(); it.played = false; });
+  S.packs[game] = append ? S.packs[game].concat(items) : items;
+  S.packMeta[game] = { hash: notesHash(), model, at: Date.now() };
+  save();
+  return items;
+}
+
+/* =====================================================================
+   SHARED SCREENS: loading, error, modal
+   ===================================================================== */
+function showLoading(title, onCancel) {
+  const tipBox = el("div", { class: "card tip" });
+  const showTip = () => {
+    const r = ALL_RULES[Math.floor(Math.random() * ALL_RULES.length)];
+    tipBox.replaceChildren(el("div", { class: "h2", style: "font-size:10px;margin-bottom:6px" }, `WHILE YOU WAIT · FRE ${r.n}`), el("div", { style: "font-weight:600" }, r.name), el("div", { class: "small muted" }, r.t));
+  };
+  showTip();
+  screen(el("div", { class: "loading" },
+    el("div", { class: "h1" }, "LOADING LEVEL…"),
+    el("div", { class: "muted" }, title),
+    el("div", { class: "loadbar" }, el("div")),
+    el("div", { class: "small muted" }, `Asking ${currentModel()}. Free models can take 1–3 minutes to build a set.`),
+    tipBox,
+    el("button", { class: "btn ghost", onclick: onCancel }, "Cancel")));
+  const iv = setInterval(showTip, 6000);
+  cleanup.push(() => clearInterval(iv));
+}
+function showError(err, onRetry, onBack) {
+  Sound.play("bad");
+  const needsKey = err && err.code === "NO_KEY";
+  const keyIn = el("input", { type: "password", placeholder: "sk-or-v1-…", autocomplete: "off", "aria-label": "OpenRouter API key" });
+  screen(el("div", { class: "card", style: "margin-top:20px" },
+    el("div", { class: "h1", style: "color:var(--red);text-shadow:3px 3px 0 #5a0f20" }, needsKey ? "INSERT KEY" : "GAME ERROR"),
+    el("p", {}, (err && err.message) || String(err)),
+    needsKey && el("div", {}, el("label", { class: "lbl" }, "Your OpenRouter API key"), keyIn,
+      el("p", { class: "small muted" }, "Saved only in this browser. Get one at ", el("a", { href: "https://openrouter.ai/keys", target: "_blank", rel: "noopener" }, "openrouter.ai/keys"), ".")),
+    el("div", { class: "row", style: "margin-top:14px" },
+      el("button", { class: "btn pink", onclick: () => {
+        if (needsKey) { if (!keyIn.value.trim()) { keyIn.focus(); return; } S.settings.apiKey = keyIn.value.trim(); save(); }
+        onRetry();
+      } }, needsKey ? "Save key & continue" : "Retry"),
+      el("button", { class: "btn ghost", onclick: onBack }, "Back"))));
+  if (needsKey) keyIn.focus();
+}
+function runWithLoading(title, task, onDone, onBack) {
+  const ctrl = new AbortController();
+  showLoading(title, () => { ctrl.abort(); onBack(); });
+  task(ctrl.signal).then(res => { if (!ctrl.signal.aborted) onDone(res); })
+    .catch(err => { if (!ctrl.signal.aborted) showError(err, () => runWithLoading(title, task, onDone, onBack), onBack); });
+}
+function confirmBox(title, body, yesLabel, onYes, extra) {
+  const bg = el("div", { class: "modal-bg", role: "dialog", "aria-modal": "true" });
+  const close = () => bg.remove();
+  bg.append(el("div", { class: "card modal" },
+    el("div", { class: "h2" }, title), el("p", {}, body), extra || null,
+    el("div", { class: "row", style: "justify-content:flex-end;margin-top:12px" },
+      el("button", { class: "btn ghost", onclick: close }, "Cancel"),
+      el("button", { class: "btn pink", onclick: () => { close(); onYes(); } }, yesLabel))));
+  bg.addEventListener("click", e => { if (e.target === bg) close(); });
+  document.body.append(bg);
+}
+function confetti() {
+  const colors = ["#ff3fa4", "#2de2ff", "#ffe14d", "#3dff8f", "#ff9a3c"];
+  for (let i = 0; i < 70; i++) {
+    const c = el("div", { class: "confetti", style: `left:${Math.random() * 100}vw;background:${colors[i % colors.length]};animation-duration:${1.8 + Math.random() * 1.8}s;animation-delay:${Math.random() * .5}s` });
+    document.body.append(c); setTimeout(() => c.remove(), 4500);
+  }
+}
+
+/* =====================================================================
+   SETUP SCREEN
+   ===================================================================== */
+function showSetup() {
+  const ta = el("textarea", { rows: 10, placeholder: "Paste your Evidence outline, class notes, or syllabus here (optional)…", "aria-label": "Course notes" });
+  ta.value = S.notes || "";
+  const wc = el("div", { class: "small muted", style: "margin-top:6px" });
+  const updWC = () => {
+    const w = (ta.value.trim().match(/\S+/g) || []).length;
+    wc.textContent = w ? `${w.toLocaleString()} words` + (ta.value.length > NOTES_CHAR_LIMIT ? ` · long notes: each request uses a ${NOTES_CHAR_LIMIT / 1000}k-character slice` : "")
+                       : "No notes: the app will use its built-in FRE rule bank.";
+  };
+  ta.addEventListener("input", updWC); updWC();
+
+  const upStatus = el("div", { class: "status" });
+  const fileIn = el("input", { type: "file", accept: ".txt,.md,.pdf,text/plain,application/pdf" });
+  const drop = el("label", { class: "drop" }, fileIn, el("div", { style: "font-size:28px" }, "📄"), el("div", { style: "font-weight:600" }, "Drop a .pdf or .txt here, or tap to choose"), el("div", { class: "small" }, "Text is read in your browser. The file itself is never uploaded anywhere."));
+  const pastePane = el("div", {}, ta, wc,
+    el("div", { class: "row", style: "margin-top:10px" },
+      el("button", { class: "btn small", onclick: () => { ta.value = SAMPLE_NOTES; updWC(); Sound.play("click"); } }, "Load sample notes"),
+      el("button", { class: "btn small ghost", onclick: () => { ta.value = ""; updWC(); } }, "Clear")));
+  const uploadPane = el("div", { style: "display:none" }, drop, upStatus);
+  const tPaste = el("button", { class: "tab on", onclick: () => setTab(0) }, "Paste text");
+  const tUp = el("button", { class: "tab", onclick: () => setTab(1) }, "Upload file");
+  function setTab(i) { tPaste.classList.toggle("on", i === 0); tUp.classList.toggle("on", i === 1); pastePane.style.display = i === 0 ? "" : "none"; uploadPane.style.display = i === 1 ? "" : "none"; }
+  async function handleFile(f) {
+    if (!f) return;
+    upStatus.className = "status"; upStatus.textContent = `Reading ${f.name}…`;
+    try {
+      let text;
+      if (/\.pdf$/i.test(f.name) || f.type === "application/pdf") text = await readPdf(f, (p, n) => upStatus.textContent = `Reading ${f.name}… page ${p} of ${n}`);
+      else text = await f.text();
+      text = text.replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+      if (!text) throw new Error("No text found. If this is a scanned PDF, it has no selectable text.");
+      ta.value = text; updWC(); setTab(0);
+      upStatus.className = "status ok"; upStatus.textContent = `Loaded ${f.name}. Review it in the Paste tab.`;
+    } catch (e) { setTab(1); upStatus.className = "status err"; upStatus.textContent = "Couldn't read that file: " + e.message; }
+  }
+  fileIn.addEventListener("change", () => handleFile(fileIn.files[0]));
+  ["dragover", "dragenter"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove("over")));
+  drop.addEventListener("drop", e => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
+
+  // key
+  const keyIn = el("input", { type: "password", placeholder: DEFAULT_KEY ? "Optional: a built-in key is set" : "sk-or-v1-…", autocomplete: "off", spellcheck: "false", "aria-label": "OpenRouter API key" });
+  keyIn.value = S.settings.apiKey || "";
+  const keyStatus = el("div", { class: "status" });
+  const showBtn = el("button", { class: "btn small ghost", onclick: () => { keyIn.type = keyIn.type === "password" ? "text" : "password"; showBtn.textContent = keyIn.type === "password" ? "Show" : "Hide"; } }, "Show");
+  const saveKey = () => { S.settings.apiKey = keyIn.value.trim(); save(); };
+  keyIn.addEventListener("change", saveKey);
+  const testBtn = el("button", { class: "btn small", onclick: async () => {
+    saveKey(); readModel(); testBtn.disabled = true; keyStatus.className = "status"; keyStatus.textContent = "Testing…";
+    try {
+      const r = await callAI([{ role: "user", content: "Reply with the single word: OK" }]);
+      keyStatus.className = "status ok"; keyStatus.textContent = `✓ Connected. Answered by ${r.model}.`; Sound.play("good");
+    } catch (e) { keyStatus.className = "status err"; keyStatus.textContent = e.message; Sound.play("bad"); }
+    testBtn.disabled = false;
+  } }, "Test key");
+
+  // advanced
+  const modelSel = el("select", { "aria-label": "Model" }, MODELS.map(m => el("option", { value: m.id }, m.label)));
+  modelSel.value = MODELS.some(m => m.id === S.settings.model) ? S.settings.model : DEFAULT_MODEL;
+  const customIn = el("input", { type: "text", placeholder: "e.g. some-provider/some-model:free", spellcheck: "false" });
+  customIn.value = S.settings.customModel || "";
+  const customWrap = el("div", { style: modelSel.value === "custom" ? "" : "display:none" }, el("label", { class: "lbl" }, "Custom model ID"), customIn);
+  modelSel.addEventListener("change", () => { customWrap.style.display = modelSel.value === "custom" ? "" : "none"; readModel(); });
+  customIn.addEventListener("change", readModel);
+  function readModel() { S.settings.model = modelSel.value; S.settings.customModel = customIn.value.trim(); save(); }
+
+  const go = () => {
+    S.notes = ta.value.trim(); saveKey(); readModel(); save();
+    Sound.play("coin"); showHub();
+  };
+  const keyRows = () => [
+    el("div", { class: "row", style: "flex-wrap:nowrap" }, keyIn, showBtn),
+    el("div", { class: "row", style: "margin-top:10px" }, testBtn,
+      el("button", { class: "btn small ghost", onclick: () => { keyIn.value = ""; saveKey(); keyStatus.className = "status"; keyStatus.textContent = DEFAULT_KEY ? "Your key was removed. The built-in key will be used." : "Key removed from this browser."; } }, "Forget key")),
+    keyStatus];
+  const modelRows = () => [
+    el("label", { class: "lbl" }, "Model"), modelSel, customWrap,
+    el("p", { class: "small muted" }, "Use a free model (its ID ends in :free). openrouter/free picks whichever free model is available.")];
+  // No built-in key: every visitor must paste their own.
+  const ownKeyCard = () => el("div", { class: "card" }, el("div", { class: "h2" }, el("span", { class: "step" }, "2"), "OPENROUTER KEY"),
+    el("p", { class: "small muted", style: "margin-top:-4px" }, "Stored only in this browser and sent only to OpenRouter. ", el("a", { href: "https://openrouter.ai/keys", target: "_blank", rel: "noopener" }, "Get a key"), "."),
+    keyRows(),
+    el("details", { class: "adv", style: "margin-top:12px" }, el("summary", {}, "Advanced: model"), modelRows()));
+  // Built-in key: the key field is optional and tucked under Advanced.
+  const builtInKeyCard = () => el("div", { class: "card" }, el("div", { class: "h2" }, el("span", { class: "step" }, "2"), "ADVANCED (OPTIONAL)"),
+    el("p", { class: "small muted", style: "margin:-4px 0 0" }, "This app comes with a built-in key that uses free models, so you can skip this step."),
+    el("details", { class: "adv", style: "margin-top:10px", open: !!S.settings.apiKey || null }, el("summary", {}, "Model and your own OpenRouter key"),
+      modelRows(),
+      el("label", { class: "lbl", style: "margin-top:14px" }, "Your own OpenRouter key (optional)"),
+      el("p", { class: "small muted", style: "margin-top:0" }, "Only needed if the built-in key hits its limits. Yours is stored only in this browser and sent only to OpenRouter. ", el("a", { href: "https://openrouter.ai/keys", target: "_blank", rel: "noopener" }, "Get a key"), "."),
+      keyRows()));
+
+  screen(
+    el("div", { class: "h1", style: "text-align:center" }, "STUDY ARCADE"),
+    el("div", { class: "pixel", style: "text-align:center;color:var(--pink);font-size:11px;margin-bottom:8px" }, "EVIDENCE EDITION"),
+    el("p", { class: "muted", style: "text-align:center;max-width:560px;margin:0 auto 20px" }, "Turn the Federal Rules of Evidence, plus your own notes, into arcade games with instant scoring and per-topic mastery."),
+    el("div", { class: "card" }, el("div", { class: "h2" }, el("span", { class: "step" }, "1"), "YOUR NOTES (OPTIONAL)"),
+      el("p", { class: "small muted", style: "margin-top:-4px" }, "Add an outline, class notes, or syllabus so questions use your professor's cases and emphasis. Skip this to use the built-in rule bank."),
+      el("div", { class: "tabs" }, tPaste, tUp), pastePane, uploadPane),
+    DEFAULT_KEY ? builtInKeyCard() : ownKeyCard(),
+    el("button", { class: "coin-btn", onclick: go }, "▶ INSERT COIN"),
+    el("p", { class: "small muted", style: "text-align:center" }, "Your progress, questions, and settings are saved in this browser."));
+}
+
+async function readPdf(file, onProgress) {
+  if (!window.pdfjsLib) throw new Error("The PDF reader didn't load. Check your connection, or paste the text instead.");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const out = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    onProgress && onProgress(p, pdf.numPages);
+    const tc = await (await pdf.getPage(p)).getTextContent();
+    out.push(tc.items.map(i => i.str + (i.hasEOL ? "\n" : " ")).join(""));
+  }
+  return out.join("\n\n");
+}
+
+/* =====================================================================
+   HUB
+   ===================================================================== */
+function poolInfo(game) {
+  const p = S.packs[game] || [];
+  if (game === "objection") return { total: p.length, fresh: p.filter(r => !r.played).length, unit: "transcripts" };
+  return { total: p.length, fresh: p.filter(i => !i.played).length, unit: game === "match" ? "pairs" : "questions" };
+}
+function showHub() {
+  const stale = ["objection", "element", "rapid", "match"].filter(g => S.packs[g].length && S.packMeta[g] && S.packMeta[g].hash !== notesHash());
+  const weakTried = triedWeakest();
+  const tiles = ["objection", "element", "rapid", "match"].map(g => {
+    const G = GAMES[g], info = poolInfo(g);
+    return el("button", { class: "tile", onclick: () => { Sound.play("click"); showIntro(g); } },
+      el("div", { class: "ico" }, G.icon), el("div", { class: "tname" }, G.name), el("div", { class: "tdesc" }, G.blurb),
+      el("div", { class: "thi" }, `HI ${fmt(S.highs[g] || 0)}` + (g === "match" && S.bestTime ? ` · BEST ${fmtTime(S.bestTime)}` : "")),
+      el("div", { class: "small muted" }, info.total ? `${info.total} ${info.unit} · ${info.fresh} unplayed` : "Not built yet. Opening it builds the questions."));
+  });
+  const anyTried = TOPIC_KEYS.some(k => masteryPct(k) !== null);
+  const weakBtn = el("button", { class: "weak-btn", disabled: !anyTried, onclick: () => { Sound.play("click"); showWeakIntro(); } },
+    el("div", { class: "ico" }, "🎯"),
+    el("div", {}, el("div", { class: "pixel", style: "font-size:12px;color:var(--pink);margin-bottom:6px" }, "WEAK SPOTS"),
+      el("div", { class: "small" }, anyTried ? `Mixed round on ${weakestTopics().map(k => TOPIC_BY_KEY[k].label).join(" + ")}` : "Play a round of anything first so the app knows your weak topics."),
+      el("div", { class: "thi pixel", style: "font-size:9px;color:var(--cyan);margin-top:4px" }, `HI ${fmt(S.highs.weak || 0)}`)));
+  const bars = TOPICS.map(t => {
+    const p = masteryPct(t.key), m = S.mastery[t.key];
+    const weak = weakTried.includes(t.key);
+    return el("div", { class: "mbar" + (weak ? " weak" : "") },
+      el("div", {}, el("span", { style: "font-weight:600" }, t.label), weak ? el("span", { class: "tag" }, "WEAK") : null,
+        el("div", { class: "small muted" }, `${t.range}${m && m.t ? ` · ${m.t} answered` : ""}`)),
+      el("div", { class: "track" }, el("div", { class: "fill", style: `width:${p === null ? 0 : Math.round(p * 100)}%` })),
+      el("div", { class: "pct" }, p === null ? "--" : Math.round(p * 100) + "%"));
+  });
+  const totalMissed = S.missed.length;
+  screen(
+    el("div", { class: "h1" }, "SELECT GAME"),
+    stale.length ? el("div", { class: "notice" }, `Your notes changed after these games were built: ${stale.map(g => GAMES[g].name).join(", ")}. Use "Fresh questions" inside a game to rebuild it from the new notes.`) : null,
+    !currentKey() ? el("div", { class: "notice" }, "No OpenRouter key yet. You'll be asked for one the first time a game builds questions.") : null,
+    el("div", { class: "tiles" }, tiles),
+    weakBtn,
+    el("div", { class: "card" }, el("div", { class: "h2" }, "MASTERY BY TOPIC"),
+      el("p", { class: "small muted", style: "margin-top:-4px" }, "Percent correct across all games. New questions are weighted toward your weakest topics."), bars),
+    el("div", { class: "row" },
+      el("button", { class: "btn", disabled: !totalMissed, onclick: () => downloadMissed(S.missed, "study-arcade-review-sheet.txt") }, `⬇ Review sheet (${totalMissed} missed)`),
+      el("button", { class: "btn ghost", onclick: showSetup }, "Notes & settings"),
+      el("span", { class: "spacer" }),
+      el("button", { class: "btn ghost", onclick: resetProgress }, "Reset progress")));
+}
+function resetProgress() {
+  const cb = el("input", { type: "checkbox", id: "rstq" });
+  confirmBox("RESET PROGRESS?", "This clears your high scores, mastery bars, coins, and missed-items list. Your notes and settings stay.", "Reset",
+    () => {
+      S.mastery = {}; S.highs = {}; S.bestTime = null; S.coins = 0; S.missed = [];
+      Object.values(S.packs).forEach(p => p.forEach(i => i.played = false));
+      if (cb.checked) { S.packs = defaultState().packs; S.packMeta = {}; }
+      save(); updateCoins(); showHub();
+    },
+    el("label", { class: "small", style: "display:flex;gap:8px;align-items:center" }, cb, "Also delete all generated questions"));
+}
+
+/* =====================================================================
+   GAME INTRO (start / fresh questions / weak-topic top-up)
+   ===================================================================== */
+function showIntro(game) {
+  const G = GAMES[game];
+  if (!S.packs[game].length) {
+    return runWithLoading(`Building ${G.name} questions`, signal => generate(game, { signal }), () => showIntro(game), showHub);
+  }
+  const info = poolInfo(game), meta = S.packMeta[game] || {};
+  const offers = [];
+  if (game === "rapid" || game === "element") {
+    for (const k of triedWeakest()) {
+      const left = S.packs[game].filter(i => i.topic === k && !i.played).length;
+      if (left < 3) offers.push(el("div", { class: "notice row", style: "justify-content:space-between" },
+        el("span", {}, `Weak topic: ${TOPIC_BY_KEY[k].label} has only ${left} unplayed question${left === 1 ? "" : "s"}.`),
+        el("button", { class: "btn small yellow", onclick: () => runWithLoading(`More ${TOPIC_BY_KEY[k].label} questions`, signal => generate(game, { focus: [k], append: true, signal }), () => showIntro(game), () => showIntro(game)) }, "+ Generate more")));
+    }
+  }
+  const start = () => { Sound.play("coin"); startGame(game); };
+  screen(
+    el("div", { class: "h1" }, G.icon + " " + G.name),
+    el("div", { class: "card" }, el("div", { class: "h2" }, "HOW TO PLAY"), el("ul", { style: "margin:0;padding-left:20px" }, G.how.map(h => el("li", {}, h)))),
+    offers,
+    el("p", { class: "small muted" }, `${info.total} ${info.unit} ready (${info.fresh} unplayed)` + (meta.model ? ` · built by ${meta.model}` : "")),
+    el("div", { class: "row" },
+      el("button", { class: "btn solid", onclick: start }, "▶ START"),
+      el("button", { class: "btn", onclick: () => freshQuestions(game) }, "↻ Fresh questions"),
+      el("span", { class: "spacer" }),
+      el("button", { class: "btn ghost", onclick: showHub }, "Back to hub")));
+  keyHandler = e => { if (e.key === "Enter") start(); };
+}
+function freshQuestions(game) {
+  if (game === "weak") return weakTopUp(() => showWeakIntro());
+  runWithLoading(`Fresh ${GAMES[game].name} questions`, signal => generate(game, { signal }), () => showIntro(game), () => showIntro(game));
+}
+function startGame(game) {
+  if (game === "rapid") return startItemRound("rapid", pickWeighted(S.packs.rapid, 12));
+  if (game === "element") return startItemRound("element", pickWeighted(S.packs.element, 6));
+  if (game === "objection") {
+    const pool = S.packs.objection, fresh = pool.filter(r => !r.played);
+    const r = (fresh.length ? fresh : pool)[Math.floor(Math.random() * (fresh.length || pool.length))];
+    return startObjection(r);
+  }
+  if (game === "match") return startMatch(pickMatchPairs());
+  if (game === "weak") return startWeak();
+}
+
+/* ---------- weak spots ---------- */
+function weakPool() {
+  const ks = weakestTopics();
+  return { ks, rapid: S.packs.rapid.filter(i => ks.includes(i.topic)), element: S.packs.element.filter(i => ks.includes(i.topic)) };
+}
+function weakTopUp(then) {
+  const ks = weakestTopics();
+  runWithLoading(`Weak-spot questions for ${ks.map(k => TOPIC_BY_KEY[k].label).join(" + ")}`, async signal => {
+    await generate("rapid", { focus: ks, append: true, signal });
+    await generate("element", { focus: ks, append: true, signal });
+  }, then, showHub);
+}
+function showWeakIntro() {
+  const { ks, rapid, element } = weakPool();
+  const enough = rapid.length + element.length >= 4;
+  const freshCount = rapid.concat(element).filter(i => !i.played).length;
+  screen(
+    el("div", { class: "h1" }, "🎯 WEAK SPOTS"),
+    el("div", { class: "card" }, el("div", { class: "h2" }, "YOUR TWO WEAKEST TOPICS"),
+      ks.map(k => { const p = masteryPct(k); return el("div", { style: "margin:6px 0" }, el("b", {}, TOPIC_BY_KEY[k].label), el("span", { class: "muted" }, ` · ${p === null ? "not played yet" : Math.round(p * 100) + "% correct"}`)); }),
+      el("ul", { style: "margin:12px 0 0;padding-left:20px" }, GAMES.weak.how.map(h => el("li", {}, h)))),
+    el("p", { class: "small muted" }, `${rapid.length} Rapid Fire + ${element.length} Element Check questions on these topics (${freshCount} unplayed).`),
+    !enough || freshCount < 3 ? el("div", { class: "notice" }, enough ? "You've played most of these. Generate more to keep it fresh." : "Not enough questions on these topics yet. Generate a small set first.") : null,
+    el("div", { class: "row" },
+      el("button", { class: "btn solid", disabled: !enough, onclick: () => { Sound.play("coin"); startWeak(); } }, "▶ START"),
+      el("button", { class: enough ? "btn" : "btn yellow", onclick: () => weakTopUp(showWeakIntro) }, "+ Generate weak-spot questions"),
+      el("span", { class: "spacer" }),
+      el("button", { class: "btn ghost", onclick: showHub }, "Back to hub")));
+}
+function startWeak() {
+  const { rapid, element } = weakPool();
+  const items = shuffle(pickWeighted(rapid, 5).concat(pickWeighted(element, 3)));
+  startItemRound("weak", items);
+}
+
+/* =====================================================================
+   ITEM ROUNDS: Rapid Fire, Element Check, Weak Spots
+   ===================================================================== */
+function hudBar(st, title) {
+  return el("div", { class: "ghud" },
+    el("span", { class: "gt" }, title),
+    el("span", {}, `Q ${Math.min(st.i + 1, st.items.length)}/${st.items.length}`),
+    el("span", { class: "sc" }, `SCORE ${fmt(st.score)}`),
+    el("span", { class: "streak" }, st.streak >= 3 ? `🔥 x${streakMult(st.streak)}` : `STREAK ${st.streak}`),
+    st.lives !== null ? el("span", { class: "lives", "aria-label": `${st.lives} lives` }, "♥".repeat(st.lives) + "♡".repeat(3 - st.lives)) : null,
+    el("span", { class: "spacer" }),
+    el("button", { class: "btn small ghost", onclick: () => quitConfirm() }, "Quit"));
+}
+function quitConfirm() { confirmBox("QUIT ROUND?", "This round won't be scored. Answers you've already given still count toward mastery.", "Quit", () => { save(); showHub(); }); }
+function addTopic(st, topic, frac) { const t = st.topics[topic] || { c: 0, t: 0 }; t.c += frac; t.t += 1; st.topics[topic] = t; }
+
+function startItemRound(mode, items) {
+  if (!items.length) return mode === "weak" ? showWeakIntro() : showIntro(mode);
+  const st = { mode, items, i: 0, score: 0, streak: 0, bestStreak: 0, lives: mode === "rapid" ? 3 : null, got: 0, parts: 0, topics: {}, missed: [] };
+  const title = GAMES[mode].name;
+  next();
+  function next() {
+    if (st.i >= st.items.length || (st.lives !== null && st.lives <= 0)) return finish();
+    const it = st.items[st.i];
+    if (it.type === "rapid") renderRapid(it); else renderElement(it);
+    inGame = true;
+  }
+  function advance() { st.i++; next(); }
+  function finish() {
+    save();
+    showResults({ game: mode, score: st.score, correct: st.got, total: st.parts, bestStreak: st.bestStreak, topics: st.topics, missed: st.missed,
+      headline: st.lives === 0 ? "GAME OVER" : "ROUND CLEAR", extra: st.lives !== null ? [["Lives left", String(st.lives)]] : [] });
+  }
+
+  function renderRapid(it) {
+    const order = shuffle([0, 1, 2, 3]);
+    const LIMIT = 20; const t0 = performance.now(); let done = false;
+    const bar = el("div", { style: "width:100%" }), timer = el("div", { class: "timer" }, bar);
+    const btns = order.map((ci, pos) => el("button", { class: "choice", onclick: () => answer(ci) }, el("span", { class: "k" }, pos + 1), el("span", {}, it.choices[ci])));
+    const fbWrap = el("div");
+    screen(hudBar(st, title), timer,
+      el("div", { class: "card" }, el("span", { class: "topic-chip" }, TOPIC_BY_KEY[it.topic].label),
+        el("div", { class: "qtext" }, it.question), el("div", { class: "choices" }, btns), fbWrap));
+    inGame = true;
+    const iv = setInterval(() => {
+      const left = Math.max(0, LIMIT - (performance.now() - t0) / 1000);
+      bar.style.width = (left / LIMIT * 100) + "%";
+      timer.className = "timer" + (left < 5 ? " danger" : left < 10 ? " warn" : "");
+      if (left <= 0) answer(null);
+    }, 100);
+    cleanup.push(() => clearInterval(iv));
+    keyHandler = e => { const n = parseInt(e.key, 10); if (!done && n >= 1 && n <= 4) answer(order[n - 1]); };
+    function answer(ci) {
+      if (done) return; done = true; clearInterval(iv);
+      const secsLeft = Math.max(0, LIMIT - (performance.now() - t0) / 1000);
+      const ok = ci === it.answer;
+      btns.forEach((b, pos) => { b.disabled = true; if (order[pos] === it.answer) b.classList.add("right"); else if (order[pos] === ci) b.classList.add("wrong"); });
+      let pts = 0;
+      if (ok) { st.streak++; st.bestStreak = Math.max(st.bestStreak, st.streak); pts = Math.round((100 + secsLeft * 5) * streakMult(st.streak)); st.score += pts; st.got++; Sound.play("good"); }
+      else {
+        st.streak = 0; if (st.lives !== null) st.lives--; Sound.play("bad");
+        const card = btns[0].closest(".card"); card.classList.add("shake"); setTimeout(() => card.classList.remove("shake"), 450);
+        st.missed.push({ game: title, topic: it.topic, prompt: it.question, yours: ci === null ? "(time ran out)" : it.choices[ci], correct: it.choices[it.answer], why: it.explanation, source: it.source, srcLabel: srcLabelText(it) });
+      }
+      st.parts++; it.played = true; recordMastery(it.topic, ok ? 1 : 0); addTopic(st, it.topic, ok ? 1 : 0);
+      const nextBtn = el("button", { class: "btn solid", onclick: advance }, st.lives === 0 ? "GAME OVER ▶" : "NEXT ▶");
+      fbWrap.replaceChildren(el("div", { class: "fb " + (ok ? "good" : "bad") },
+        el("div", { class: "verdict" }, ok ? "CORRECT!" : ci === null ? "TIME'S UP!" : "MISS!", ok ? el("span", { class: "pts" }, `+${fmt(pts)}`) : null),
+        !ok ? el("div", { style: "margin-bottom:6px" }, "Answer: ", el("b", {}, it.choices[it.answer])) : null,
+        it.explanation ? el("div", {}, it.explanation) : null, sourceBox(it),
+        el("div", { class: "next-row" }, nextBtn)));
+      // refresh HUD
+      app.firstChild.replaceWith(hudBar(st, title));
+      nextBtn.focus({ preventScroll: true }); fbWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      keyHandler = e => { if (e.key === "Enter") { e.preventDefault(); advance(); } };
+    }
+  }
+
+  function renderElement(it) {
+    const checked = it.elements.map(() => false); let outcome = null, done = false;
+    const elBtns = it.elements.map((e, idx) => {
+      const b = el("button", { class: "elx", "aria-pressed": "false", onclick: () => { if (done) return; checked[idx] = !checked[idx]; b.classList.toggle("on", checked[idx]); b.setAttribute("aria-pressed", String(checked[idx])); b.querySelector(".box").textContent = checked[idx] ? "✓" : ""; Sound.play("click"); } },
+        el("span", { class: "box" }), el("span", {}, e.text));
+      return b;
+    });
+    const ocBtns = ["admissible", "inadmissible"].map(o => el("button", { class: "oc", onclick: () => pickOutcome(o) }, o === "admissible" ? "✔ Admissible" : "✖ Inadmissible"));
+    const submit = el("button", { class: "btn solid", disabled: true, onclick: grade }, "SUBMIT");
+    const fbWrap = el("div");
+    function pickOutcome(o) { if (done) return; outcome = o; ocBtns.forEach((b, i) => b.classList.toggle("on", ["admissible", "inadmissible"][i] === o)); submit.disabled = false; Sound.play("click"); }
+    screen(hudBar(st, title),
+      el("div", { class: "card" }, el("span", { class: "topic-chip" }, TOPIC_BY_KEY[it.topic].label),
+        el("div", { class: "rule-name" }, it.rule),
+        el("div", { class: "facts" }, it.facts),
+        el("div", { class: "small muted", style: "margin-bottom:8px" }, "Tap each element the facts SATISFY:"),
+        el("div", { class: "els" }, elBtns),
+        el("div", { class: "small muted", style: "margin-bottom:8px" }, "Outcome under this rule:"),
+        el("div", { class: "outcomes" }, ocBtns),
+        el("div", { class: "next-row" }, submit), fbWrap));
+    inGame = true;
+    keyHandler = e => { const k = e.key.toLowerCase(); if (k === "a") pickOutcome("admissible"); else if (k === "i") pickOutcome("inadmissible"); else if (k === "enter" && outcome && !done) grade(); else { const n = parseInt(k, 10); if (n >= 1 && n <= elBtns.length) elBtns[n - 1].click(); } };
+    function grade() {
+      if (done || !outcome) return; done = true; submit.remove();
+      let right = 0;
+      it.elements.forEach((e, idx) => {
+        const ok = checked[idx] === e.met; if (ok) right++;
+        const b = elBtns[idx]; b.disabled = true; b.classList.add(ok ? "right" : "wrong");
+        b.children[1].append(el("span", { class: "why" }, `${ok ? "✓" : "✗"} ${e.met ? "Met" : "Not met"}${e.why ? ". " + e.why : ""}`));
+      });
+      const ocOk = outcome === it.outcome;
+      ocBtns.forEach((b, i) => { b.disabled = true; const o = ["admissible", "inadmissible"][i]; if (o === it.outcome) b.style.borderColor = "var(--green)"; else if (o === outcome) b.style.borderColor = "var(--red)"; });
+      const parts = it.elements.length + 1, got = right + (ocOk ? 1 : 0), perfect = got === parts;
+      let pts = right * 50 + (ocOk ? 100 : 0);
+      if (perfect) { st.streak++; st.bestStreak = Math.max(st.bestStreak, st.streak); pts = Math.round(pts * streakMult(st.streak)); Sound.play("good"); }
+      else { st.streak = 0; Sound.play("bad"); }
+      st.score += pts; st.got += got; st.parts += parts; it.played = true;
+      recordMastery(it.topic, got / parts); addTopic(st, it.topic, got / parts);
+      if (!perfect) st.missed.push({ game: title, topic: it.topic, prompt: `${it.rule}: ${it.facts}`,
+        yours: `Checked: ${it.elements.filter((e, i) => checked[i]).map(e => e.text).join("; ") || "(none)"}. Outcome: ${outcome}.`,
+        correct: `Met: ${it.elements.filter(e => e.met).map(e => e.text).join("; ") || "(none)"}. Outcome: ${it.outcome}.`,
+        why: it.explanation, source: it.source, srcLabel: srcLabelText(it) });
+      const nextBtn = el("button", { class: "btn solid", onclick: advance }, "NEXT ▶");
+      fbWrap.replaceChildren(el("div", { class: "fb " + (perfect ? "good" : "bad") },
+        el("div", { class: "verdict" }, perfect ? "PERFECT!" : `${got}/${parts} RIGHT`, el("span", { class: "pts" }, `+${fmt(pts)}`)),
+        el("div", { style: "margin-bottom:6px" }, "Correct outcome: ", el("b", {}, it.outcome.toUpperCase()), ocOk ? " ✓" : " (you said " + outcome + ")"),
+        it.explanation ? el("div", {}, it.explanation) : null, sourceBox(it), el("div", { class: "next-row" }, nextBtn)));
+      app.firstChild.replaceWith(hudBar(st, title));
+      nextBtn.focus({ preventScroll: true }); fbWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      keyHandler = e => { if (e.key === "Enter") { e.preventDefault(); advance(); } };
+    }
+  }
+}
+
+/* =====================================================================
+   OBJECTION!
+   ===================================================================== */
+function startObjection(round) {
+  const st = { i: 0, score: 0, streak: 0, bestStreak: 0, got: 0, total: 0, topics: {}, missed: [], items: round.lines };
+  const log = el("div", { class: "transcript", "aria-live": "polite" });
+  const ctrl = el("div", { class: "ctrl" });
+  const hudWrap = el("div");
+  const refreshHud = () => hudWrap.replaceChildren(el("div", { class: "ghud" },
+    el("span", { class: "gt" }, "OBJECTION!"), el("span", {}, `LINE ${Math.min(st.i + 1, round.lines.length)}/${round.lines.length}`),
+    el("span", { class: "sc" }, `SCORE ${fmt(st.score)}`), el("span", { class: "streak" }, st.streak >= 3 ? `🔥 x${streakMult(st.streak)}` : `STREAK ${st.streak}`),
+    el("span", { class: "spacer" }), el("button", { class: "btn small ghost", onclick: quitConfirm }, "Quit")));
+  refreshHud();
+  screen(hudWrap,
+    el("div", { class: "card" }, el("div", { class: "rule-name" }, round.title), round.setup ? el("div", { class: "setup" }, round.setup) : null, log),
+    ctrl);
+  inGame = true;
+  showLine();
+
+  function showLine() {
+    if (st.i >= round.lines.length) return finish();
+    const line = round.lines[st.i];
+    log.querySelectorAll(".cur").forEach(n => n.classList.remove("cur"));
+    const mk = el("span", { class: "mk" });
+    const row = el("div", { class: "tl cur" }, el("span", { class: "sp" }, line.speaker + "."), el("span", {}, line.text), mk);
+    log.append(row);
+    const t0 = performance.now();
+    refreshHud(); mainControls();
+    setTimeout(() => row.scrollIntoView({ behavior: "smooth", block: "center" }), 30);
+
+    function mainControls() {
+      ctrl.replaceChildren(el("div", { class: "big" },
+        el("button", { class: "obj-btn in", onclick: () => decide("none") }, "LET IT IN", el("div", { style: "font-size:9px;margin-top:6px;opacity:.7" }, "OVERRULED · L")),
+        el("button", { class: "obj-btn obj", onclick: groundControls }, "OBJECTION!", el("div", { style: "font-size:9px;margin-top:6px;opacity:.8" }, "PICK GROUND · O"))));
+      keyHandler = e => { const k = e.key.toLowerCase(); if (k === "l") decide("none"); else if (k === "o") groundControls(); };
+    }
+    function groundControls() {
+      Sound.play("gavel");
+      ctrl.replaceChildren(el("div", { class: "row", style: "justify-content:space-between;margin-bottom:8px" },
+          el("span", { class: "pixel", style: "font-size:11px;color:var(--red)" }, "GROUNDS?"),
+          el("button", { class: "btn small ghost", onclick: mainControls }, "← Back")),
+        el("div", { class: "grounds" }, GROUNDS.map((g, i) => el("button", { class: "ground", onclick: () => decide(g.k) }, el("span", { class: "k" }, i + 1), g.label))));
+      keyHandler = e => { const n = parseInt(e.key, 10); if (n >= 1 && n <= 6) decide(GROUNDS[n - 1].k); else if (e.key === "Escape") mainControls(); };
+    }
+    function decide(choice) {
+      keyHandler = null;
+      const secs = (performance.now() - t0) / 1000;
+      const ok = line.ruling === "overruled" ? choice === "none" : choice === line.ground;
+      let pts = 0;
+      if (ok) { st.streak++; st.bestStreak = Math.max(st.bestStreak, st.streak); pts = Math.round((100 + Math.max(0, 50 - secs * 5)) * streakMult(st.streak)); st.score += pts; st.got++; Sound.play("good"); }
+      else { st.streak = 0; Sound.play("bad"); ctrl.classList.add("shake"); setTimeout(() => ctrl.classList.remove("shake"), 450); }
+      st.total++; recordMastery(line.topic, ok ? 1 : 0); addTopic(st, line.topic, ok ? 1 : 0);
+      row.classList.remove("cur"); row.classList.add(ok ? "ok" : "no"); mk.textContent = ok ? "✓" : "✗";
+      const rulingText = line.ruling === "sustained" ? `SUSTAINED · ${groundLabel(line.ground)}` : "OVERRULED · it comes in";
+      const yours = choice === "none" ? "Let it in" : `Objection: ${groundLabel(choice)}`;
+      let note = null;
+      if (!ok && line.ruling === "sustained" && choice !== "none") note = "Right to object, wrong ground.";
+      if (!ok && line.ruling === "sustained" && choice === "none") note = "This one should have drawn an objection.";
+      if (!ok && line.ruling === "overruled") note = "No winning objection here.";
+      if (!ok) st.missed.push({ game: "Objection!", topic: line.topic, prompt: `${round.title}: ${line.speaker === "Q" ? "Question" : "Answer"}: "${line.text}"`, yours, correct: rulingText, why: line.reason, source: line.source, srcLabel: srcLabelText(line) });
+      st.i++; refreshHud();
+      const last = st.i >= round.lines.length;
+      const nextBtn = el("button", { class: "btn solid", onclick: showLine }, last ? "VERDICT ▶" : "NEXT LINE ▶");
+      ctrl.replaceChildren(el("div", { class: "fb " + (ok ? "good" : "bad"), style: "margin-top:0" },
+        el("div", { class: "verdict" }, ok ? "GOOD CALL!" : "BAD CALL!", ok ? el("span", { class: "pts" }, `+${fmt(pts)}`) : null),
+        el("div", {}, "Ruling: ", el("b", {}, rulingText)),
+        el("div", { class: "small muted" }, "You: " + yours + (note ? ". " + note : "")),
+        line.reason ? el("div", { style: "margin-top:6px" }, line.reason) : null,
+        sourceBox(line), el("div", { class: "next-row" }, nextBtn)));
+      nextBtn.focus({ preventScroll: true });
+      keyHandler = e => { if (e.key === "Enter") { e.preventDefault(); showLine(); } };
+    }
+  }
+  function finish() {
+    round.played = true; save();
+    showResults({ game: "objection", score: st.score, correct: st.got, total: st.total, bestStreak: st.bestStreak, topics: st.topics, missed: st.missed, headline: "COURT ADJOURNED", extra: [] });
+  }
+}
+
+/* =====================================================================
+   MATCH
+   ===================================================================== */
+function bankPairs() {
+  return ALL_RULES.filter(r => !/common law/.test(r.n)).map(r => ({ id: "bank-" + r.n, type: "match", kind: "rule", topic: r.topic, left: "FRE " + r.n, right: r.name.charAt(0).toUpperCase() + r.name.slice(1), source: r.t, sourceType: "rules", played: false }));
+}
+function pickMatchPairs() {
+  const same = (a, b) => a.left.toLowerCase() === b.left.toLowerCase() || a.right.toLowerCase() === b.right.toLowerCase();
+  let picks = pickWeighted(S.packs.match, 6, same);
+  if (picks.length < 6) picks = picks.concat(pickWeighted(bankPairs().filter(b => !picks.some(p => same(p, b))), 6 - picks.length, same));
+  return picks;
+}
+function startMatch(pairs) {
+  const st = { mistakes: 0, matched: 0, t0: performance.now(), missedIds: new Set(), sel: null };
+  const timeEl = el("span", { class: "sc" }, "TIME 0:00"), misEl = el("span", { class: "streak" }, "MISTAKES 0");
+  const hud = el("div", { class: "ghud" }, el("span", { class: "gt" }, "MATCH"), timeEl, misEl, el("span", {}, `PAIRS 0/${pairs.length}`), el("span", { class: "spacer" }), el("button", { class: "btn small ghost", onclick: quitConfirm }, "Quit"));
+  const mk = (p, side) => {
+    const b = el("button", { class: "mi " + (side === "L" ? "l" : "r") }, side === "L" ? p.left : p.right);
+    b.dataset.id = p.id; b.dataset.side = side; b.addEventListener("click", () => tap(b)); return b;
+  };
+  const L = shuffle(pairs).map(p => mk(p, "L")), R = shuffle(pairs).map(p => mk(p, "R"));
+  screen(hud, el("p", { class: "small muted", style: "margin-top:0" }, "Click a label on the left, then its match on the right."),
+    el("div", { class: "mgrid" }, el("div", { class: "mcol" }, L), el("div", { class: "mcol" }, R)));
+  inGame = true;
+  const iv = setInterval(() => timeEl.textContent = "TIME " + fmtTime((performance.now() - st.t0) / 1000), 250);
+  cleanup.push(() => clearInterval(iv));
+  function tap(b) {
+    if (b.classList.contains("done")) return;
+    if (!st.sel || st.sel.dataset.side === b.dataset.side) {
+      if (st.sel) st.sel.classList.remove("sel");
+      if (st.sel === b) { st.sel = null; return; }
+      st.sel = b; b.classList.add("sel"); Sound.play("click"); return;
+    }
+    const a = st.sel; st.sel = null; a.classList.remove("sel");
+    if (a.dataset.id === b.dataset.id) {
+      a.classList.add("done"); b.classList.add("done"); st.matched++; Sound.play("good");
+      hud.children[3].textContent = `PAIRS ${st.matched}/${pairs.length}`;
+      if (st.matched === pairs.length) { clearInterval(iv); setTimeout(finish, 450); }
+    } else {
+      st.mistakes++; misEl.textContent = `MISTAKES ${st.mistakes}`; Sound.play("bad");
+      st.missedIds.add(a.dataset.id); st.missedIds.add(b.dataset.id);
+      [a, b].forEach(x => { x.classList.add("shake", "flash-bad"); setTimeout(() => x.classList.remove("shake", "flash-bad"), 450); });
+    }
+  }
+  function finish() {
+    const secs = (performance.now() - st.t0) / 1000;
+    const score = Math.max(0, Math.round(pairs.length * 100 + Math.max(0, 300 - secs * 5) - st.mistakes * 30));
+    const topics = {}, missed = [];
+    pairs.forEach(p => {
+      const ok = !st.missedIds.has(p.id);
+      const t = topics[p.topic] || { c: 0, t: 0 }; t.c += ok ? 1 : 0; t.t++; topics[p.topic] = t;
+      recordMastery(p.topic, ok ? 1 : 0);
+      const real = S.packs.match.find(x => x.id === p.id); if (real) real.played = true;
+      if (!ok) missed.push({ game: "Match", topic: p.topic, prompt: p.left, yours: "(mismatched at least once)", correct: p.right, why: "", source: p.source, srcLabel: srcLabelText(p) });
+    });
+    const newBest = !S.bestTime || secs < S.bestTime;
+    if (newBest) S.bestTime = Math.round(secs);
+    save();
+    showResults({ game: "match", score, correct: pairs.length - missed.length, total: pairs.length, bestStreak: null, topics, missed, headline: "ALL MATCHED",
+      extra: [["Time", fmtTime(secs) + (newBest ? " ★ BEST" : "")], ["Mistakes", String(st.mistakes)]] });
+  }
+}
+
+/* =====================================================================
+   RESULTS
+   ===================================================================== */
+function showResults(r) {
+  const prevHigh = S.highs[r.game] || 0;
+  const isHigh = r.score > 0 && r.score > prevHigh;
+  if (isHigh) S.highs[r.game] = r.score;
+  S.coins = (S.coins || 0) + r.score;
+  const stamp = new Date().toISOString();
+  S.missed = r.missed.map(m => ({ ...m, at: stamp })).concat(S.missed).slice(0, 300);
+  save(); updateCoins();
+
+  const scoreEl = el("div", { class: "big-score" }, "0");
+  const acc = r.total ? Math.round(r.correct / r.total * 100) : 0;
+  const stats = [["Accuracy", acc + "%"]].concat(r.bestStreak !== null ? [["Best streak", String(r.bestStreak)]] : [], r.extra || [], [["High score", fmt(Math.max(prevHigh, r.score))]]);
+  const topicRows = Object.entries(r.topics).sort((a, b) => a[1].c / a[1].t - b[1].c / b[1].t).map(([k, v]) => {
+    const p = v.c / v.t;
+    return el("div", { class: "mbar" + (p < 0.6 ? " weak" : "") }, el("div", { style: "font-weight:600" }, TOPIC_BY_KEY[k].label),
+      el("div", { class: "track" }, el("div", { class: "fill", style: `width:${Math.round(p * 100)}%` })), el("div", { class: "pct" }, Math.round(p * 100) + "%"));
+  });
+  const missList = r.missed.map(m => el("div", { class: "miss" },
+    el("span", { class: "topic-chip" }, TOPIC_BY_KEY[m.topic] ? TOPIC_BY_KEY[m.topic].label : m.topic),
+    el("div", { class: "mq" }, m.prompt),
+    el("div", { class: "ma" }, el("i", {}, "You: " + m.yours)),
+    el("div", { class: "ma" }, el("b", {}, "Correct: " + m.correct)),
+    m.why ? el("div", { class: "small muted", style: "margin-top:4px" }, m.why) : null,
+    sourceBox(m)));
+  const replayGame = r.game;
+  screen(
+    el("div", { class: "h1", style: "text-align:center" }, r.headline),
+    scoreEl,
+    isHigh ? el("div", { class: "newhigh" }, "★ NEW HIGH SCORE ★") : null,
+    el("div", { class: "stats" }, stats.map(([l, v]) => el("div", { class: "stat" }, el("div", { class: "l" }, l), el("div", { class: "v" }, v)))),
+    topicRows.length ? el("div", { class: "card" }, el("div", { class: "h2" }, "THIS ROUND BY TOPIC"), topicRows) : null,
+    el("div", { class: "card" }, el("div", { class: "h2" }, r.missed.length ? `MISSED (${r.missed.length})` : "NO MISSES!"),
+      r.missed.length ? missList : el("p", { class: "muted", style: "margin:0" }, "Flawless round. Nothing to review."),
+      r.missed.length ? el("div", { class: "row", style: "margin-top:12px" }, el("button", { class: "btn small", onclick: () => downloadMissed(r.missed.map(m => ({ ...m, at: stamp })), `study-arcade-${replayGame}-misses.txt`) }, "⬇ Download these misses (.txt)")) : null),
+    el("div", { class: "row" },
+      el("button", { class: "btn solid", onclick: () => { Sound.play("coin"); replayGame === "weak" ? showWeakIntro() : startGame(replayGame); } }, "▶ PLAY AGAIN"),
+      el("button", { class: "btn", onclick: () => freshQuestions(replayGame) }, "↻ Fresh questions"),
+      el("button", { class: "btn ghost", onclick: showHub }, "Back to hub")));
+  // count-up animation
+  const t0 = performance.now(), dur = 900;
+  const tick = () => { const p = Math.min(1, (performance.now() - t0) / dur); scoreEl.textContent = fmt(r.score * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+  if (isHigh) { Sound.play("high"); confetti(); } else Sound.play(acc >= 60 ? "coin" : "over");
+}
+
+function downloadMissed(list, filename) {
+  if (!list.length) return;
+  const lines = ["STUDY ARCADE: EVIDENCE EDITION · REVIEW SHEET", `Generated ${new Date().toLocaleString()}`, `${list.length} missed item${list.length === 1 ? "" : "s"}`,
+    "AI-generated questions can be wrong. Check against the rules and your notes.", ""];
+  list.forEach((m, i) => {
+    lines.push(`${i + 1}. [${TOPIC_BY_KEY[m.topic] ? TOPIC_BY_KEY[m.topic].label : m.topic}] ${m.game}`);
+    lines.push(`   Q: ${m.prompt}`, `   Your answer: ${m.yours}`, `   Correct: ${m.correct}`);
+    if (m.why) lines.push(`   Why: ${m.why}`);
+    if (m.source) lines.push(`   Source (${m.srcLabel || "unchecked"}): "${m.source}"`);
+    lines.push("");
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: filename });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* =====================================================================
+   BOOT
+   ===================================================================== */
+document.getElementById("muteBtn").addEventListener("click", () => { S.settings.muted = !S.settings.muted; save(); updateMute(); Sound.play("click"); });
+document.getElementById("logoBtn").addEventListener("click", () => {
+  if (inGame) quitConfirm(); else if (S.notes || Object.values(S.packs).some(p => p.length)) showHub(); else showSetup();
+});
+updateCoins(); updateMute();
+showSetup();
+</script>
+</body>
+</html>
